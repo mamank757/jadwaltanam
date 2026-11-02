@@ -49,6 +49,7 @@ h3{font-size:17px;margin:22px 0 8px}
 <b>Asumsi yang perlu dikalibrasi:</b> ETo 4 mm/hari, perkolasi 1,5 mm/hari, pengurang risiko kekeringan varietas toleran 15% per tingkat, hasil lapang = 65% potensi (gogo 45%); peringkat rekomendasi memakai perkiraan hasil, bukan skor. Data varietas (array VAR) bersifat indikatif: cocokkan dengan Deskripsi Varietas Padi resmi dan rekomendasi BPSB/BRMP Sulsel. Model tidak memuat suhu (dataran tinggi Mamasa), tanah, hama-penyakit, atau debit irigasi. Gunakan bersama Kalender Tanam Terpadu Kementan dan produk BMKG.</p></main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script>
 const DATA_URL='data.json',SKMIN=0.05;
 const MN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],$=i=>document.getElementById(i);
@@ -72,14 +73,8 @@ const C=(id,cfg)=>{if(ch[id])ch[id].destroy();cfg.options=Object.assign({respons
 
 /* ===== Modul jadwal tanam padi ===== */
 // n=nama, u=umur sebar-panen (hari), y=potensi hasil (t/ha), k=toleransi kering (0-2), g=padi gogo, t=catatan. INDIKATIF: verifikasi ke deskripsi varietas resmi.
-const VAR=[
- {n:'Ciherang',u:120,y:8.5,k:0,t:'Umum dipakai; butuh air cukup'},
- {n:'Mekongga',u:120,y:8.4,k:0,t:'Populer di Sulawesi'},
- {n:'Inpari 32 HDB',u:120,y:8.4,k:1,t:'Tahan HDB; BRMP Sulsel mendiseminasikan'},
- {n:'Inpari 30 Sub1',u:111,y:9.6,k:0,t:'Toleran rendaman ±2 minggu: lahan rawan banjir'},
- {n:'Inpari 38 THA',u:103,y:8.1,k:1,t:'Genjah, untuk tadah hujan'},
- {n:'Inpari 42 GSR',u:112,y:10.6,k:1,t:'Potensi tinggi, genjah'},
- {n:'Inpago 8 (gogo)',u:120,y:8.1,k:2,g:1,a:.45,t:'Padi gogo lahan kering, tanpa penggenangan'}];
+let VAR = [];
+const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1d-xYcQxGpiBQKDecFrzHizM031Up23msjtaDVQStLc0/edit?usp=sharing';
 const ETO=4,PERC=1.5,LP=14,NUR=20,KC=[1.05,1.2,.9],KY=[.25,.6,.25];
 function series(s,o,d){
   const o2=[],f0=s.fc[0];
@@ -162,11 +157,39 @@ function render(){
   tanam();
 }
 
-fetch(DATA_URL+'?t='+Date.now()).then(r=>r.json()).then(r=>{
+Promise.all([
+  fetch(DATA_URL+'?t='+Date.now()).then(r=>r.json()),
+  new Promise((resolve, reject) => {
+    Papa.parse(SHEET_CSV_URL, {
+      download: true,
+      header: true,
+      dynamicTyping: true, // Otomatis ubah teks angka di Sheets menjadi Number di JS
+      skipEmptyLines: true,
+      complete: results => resolve(results.data),
+      error: err => reject(err)
+    });
+  })
+]).then(([r, sheetData]) => {
+  VAR = sheetData; // Memasukkan data dari spreadsheet ke dalam aplikasi
+  
   if(r.error)throw new Error(r.error);
-  D=r;const I=r.idx;B=I.hist.some(x=>x.m===12)?1:0; // deteksi bulan 1-12 vs 0-11
+  D=r;const I=r.idx;B=I.hist.some(x=>x.m===12)?1:0; 
   $('meta').textContent=`Data ${r.meta.y0}–${r.meta.y1} · ${r.meta.n} pos · Niño 3.4 terakhir: ${MN[m0(I.m)]} ${I.y} (${f1(I.oni)} °C) · DMI terakhir: ${MN[m0(I.dm)]} ${I.dy} (${f1(I.dmi)} °C) · BoM: ${I.bomMsg} · diperbarui ${r.updated}`;
   $('st').innerHTML=r.stations.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  map=L.map('map').setView([-4.0894, 120.1601], 10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
+  map.createPane('batas');map.getPane('batas').style.zIndex=350; 
+  lay=L.layerGroup().addTo(map);
+  fetch('sulawesi-selatan.json').then(x=>x.json()).then(g=>L.geoJSON(g,{pane:'batas',interactive:false,style:{color:'#64748b',weight:2,fillOpacity:.1}}).addTo(map)).catch(e=>console.error('Gagal memuat batas wilayah:',e));
+  
+  const set=(o,d)=>{o=Math.max(-4.5,Math.min(4.5,+o||0));d=Math.max(-2,Math.min(2,+d||0));sc={o,d};$('o').value=o;$('d').value=d;render();};
+  set(I.oni,I.dmi);$('st').onchange=render;$('wq').onchange=tanam;
+  $('o').onchange=$('d').onchange=()=>set($('o').value,$('d').value);
+  document.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{const v=b.dataset.s;v==='obs'?set(I.oni,I.dmi):set(...v.split(',').map(Number));});
+}).catch(e=>{
+  $('err').textContent='Gagal memuat data: '+ (e.message || e) + ' (pastikan URL Sheet dan JSON benar)';
+  $('meta').textContent='';
+});
   // 1. Ubah koordinat ke tengah Kabupaten Wajo (-4.0894, 120.1601) dan zoom level ke 10
 map=L.map('map').setView([-4.0894, 120.1601], 10);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
