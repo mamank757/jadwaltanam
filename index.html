@@ -44,7 +44,14 @@ h3{font-size:17px;margin:22px 0 8px}
 
 <h3>Analisis jadwal tanam &amp; varietas padi</h3>
 <div class="bar"><label>Sumber air <select id="wq"><option value="0">Tadah hujan</option><option value=".5">Irigasi sederhana (menutup 50% defisit)</option><option value=".9">Irigasi teknis (menutup 90% defisit)</option></select></label><span class="note">Pos &amp; skenario ENSO/IOD mengikuti pilihan di atas.</span></div>
-<div class="cd" id="rec" style="margin-bottom:12px"></div>
+<div class="input-group">
+  <label for="metode">Metode Tanam:</label>
+  <select id="metode" onchange="tanam()">
+    <option value="tapin">Tapin (Tanam Pindah)</option>
+    <option value="tabela">Tabela (Tanam Benih Langsung)</option>
+  </select>
+</div>
+  <div class="cd" id="rec" style="margin-bottom:12px"></div>
 <div class="cd" style="margin-bottom:12px"><h2>Skor kelayakan (0–100): varietas × tanggal pindah tanam</h2><div id="hm"></div><p class="note">Hijau ≥75 layak · oranye 55–74 waspada · merah &lt;55 hindari. Arahkan kursor ke sel untuk rincian.</p></div>
 <div class="cd" style="margin-bottom:12px"><h2>Tanggal tanam terbaik per pos</h2><table id="tp"></table></div>
 
@@ -93,52 +100,62 @@ function series(s,o,d){
   return o2;
 }
 function days(ser){const a=[],b=[],f=[];ser.forEach(x=>{for(let i=0;i<x.n;i++){a.push(x.v/x.n);b.push(x.p80/x.n);f.push(x.fc);}});return{a,b,f};}
-function sim(dy,T,v,q){
-  const Dc=v.u-NUR,lp=v.g?0:LP,kq=v.g?0:q,A=dy.a;
+
+// Fungsi sim() telah dimodifikasi menerima potongUmur untuk logika fisik Tabela
+function sim(dy,T,v,q, potongUmur){
+  const isTabela = potongUmur > 0;
+  const uBaru = v.u - potongUmur; // Umur total berkurang (menghindari transplanting shock)
+  const waktuPersemaian = isTabela ? 0 : NUR; // Tabela tidak ada persemaian di luar lahan utama
+  const Dc = uBaru - waktuPersemaian; // Hari durasi irigasi di lahan utama
+  
+  const lp=v.g?0:LP, kq=v.g?0:q, A=dy.a;
   if(T+Dc>A.length)return null;
+  
   const run=P=>{let lu=0,ld=0,us=[0,0,0],ds=[0,0,0];
     for(let t=T-lp;t<T+Dc;t++){const pe=(v.g?.7:.85)*P[t];let n,s=-1;
       if(t>=T){const fr=(t-T)/Dc;s=fr<.4?0:fr<.7?1:2;n=ETO*KC[s]+(v.g?0:PERC);}else n=200/lp;
       const u=Math.max(0,n-pe)*(1-kq);
       if(s<0){lu+=u;ld+=n;}else{us[s]+=u;ds[s]+=n;}}
     return .1*(ld?lu/ld:0)+KY.reduce((a,k,i)=>a+k*us[i]/ds[i],0);};
+    
   const mean=(x,y)=>{let s=0;for(let t=x;t<y;t++)s+=A[t];return s/(y-x);};
   const w=(mean((T+.4*Dc)|0,(T+.7*Dc)|0)>10?.08:0)+(mean(T+Dc-14,T+Dc)>8?.08:0),f=1-.15*v.k;
   const a=100*(1-Math.min(.95,run(dy.a)*f+w)),b=100*(1-Math.min(.95,run(dy.b)*f+w));
   return{a,b,m:(a+b)/2,y:v.y*(v.a||.65)*(a+b)/200,fc:dy.f[T+Dc-1]};
 }
-function plan(s,q){
+
+function plan(s, q, potongUmur = 0){
   const ser=series(s,sc.o,sc.d),dy=days(ser),t0=new Date(ser[0].y,ser[0].m,1),cols=[];
   for(let T=14;T<dy.a.length-90;T+=15)cols.push(T);
-  return{t0,cols,res:VAR.map(v=>cols.map(T=>sim(dy,T,v,q)))};
+  return{t0,cols,res:VAR.map(v=>cols.map(T=>sim(dy,T,v,q, potongUmur)))};
 }
+
 const dl=(t0,T)=>{const x=new Date(t0.getFullYear(),t0.getMonth(),1+T);return x.getDate()+' '+MN[x.getMonth()];};
 const bestOf=R=>{let b=null;R.res.forEach((r,i)=>r.forEach((c,j)=>{if(c&&(!b||c.y>b.c.y))b={i,j,c};}));return b;};
-function tanam(){
-  const q=+$('wq').value,R=plan(S,q),{t0,cols,res}=R,b=bestOf(R);
 
-  // 1. Cari indeks kolom tanggal terbaik (hasil/tonase tertinggi) untuk MASING-MASING varietas
+function tanam(){
+  const metode = $('metode') ? $('metode').value : 'tapin';
+  const potongUmur = (metode === 'tabela') ? 10 : 0; 
+  
+  const q=+$('wq').value,R=plan(S,q,potongUmur),{t0,cols,res}=R,b=bestOf(R);
+  
   const bestPerVar = res.map(row => {
     let maxIdx = -1, maxY = -1;
     row.forEach((c, j) => {
-      if (c && c.y > maxY) {
-        maxY = c.y;
-        maxIdx = j;
-      }
+      if (c && c.y > maxY) { maxY = c.y; maxIdx = j; }
     });
     return maxIdx;
   });
 
-  // 2. Render tabel Heatmap dengan kelas .s4 khusus pada kolom terbaik tiap varietas
+  // Sintaks yang benar dengan class .s4 untuk tanggal terbaik
   $('hm').innerHTML='<table class="hm"><tr><th>Varietas (umur)</th>'+cols.map(T=>`<th>${dl(t0,T).replace(' ','<br>')}</th>`).join('')+'</tr>'
    +VAR.map((v,i)=>{
-     const bestJ = bestPerVar[i]; // Kolom tanggal terbaik untuk varietas i
-     return `<tr><td title="${v.t}">${v.n} (${v.u} hr)</td>`+res[i].map((c,j)=>{
+     const bestJ = bestPerVar[i];
+     return `<tr><td title="${v.t}">${v.n} (${v.u - potongUmur} hr)</td>`+res[i].map((c,j)=>{
        if(!c) return '<td>–</td>';
-       // Jika j adalah kolom terbaik untuk varietas ini, beri kelas .s4 (biru)
        const isBest = (j === bestJ);
        const cls = isBest ? 's4' : (c.m>=75 ? 's3' : (c.m>=55 ? 's2' : 's1'));
-       return `<td class="${cls}" title="${isBest ? '★ TANGGAL TANAM TERBAIK VARIENTAS INI ★\n' : ''}Pindah tanam ${dl(t0,cols[j])}: skor hujan-prakiraan ${Math.round(c.a)}, hujan-kering ${Math.round(c.b)}, hasil ≈ ${c.y.toFixed(1)} t/ha${c.fc?'':' (sebagian siklus memakai klimatologi)'}">${Math.round(c.m)}</td>`;
+       return `<td class="${cls}" title="${isBest ? '★ TANGGAL TANAM TERBAIK VARIETAS INI ★\n' : ''}Pindah tanam ${dl(t0,cols[j])}: skor hujan-prakiraan ${Math.round(c.a)}, hujan-kering ${Math.round(c.b)}, hasil ≈ ${c.y.toFixed(1)} t/ha${c.fc?'':' (sebagian siklus memakai klimatologi)'}">${Math.round(c.m)}</td>`;
      }).join('')+'</tr>';
    }).join('')+'</table>';
 
@@ -148,9 +165,10 @@ function tanam(){
   $('rec').innerHTML=`<h2>Rekomendasi pos ${S.name}</h2><p style="margin:0 0 6px"><b>Pindah tanam ±${dl(t0,cols[b.j])}</b> dengan <b>${VAR[b.i].n}</b>: skor ${Math.round(b.c.m)} (hujan-kering ${Math.round(b.c.b)}), hasil lapang indikatif ≈ ${b.c.y.toFixed(1)} t/ha.</p>
   <div class="note">Jendela layak (skor ≥75) untuk ${VAR[b.i].n}: ${ok.join(', ')||'tidak ada'}.<br>Varietas pada tanggal terbaiknya: ${per.map(x=>`${VAR[x.i].n} → ${dl(t0,cols[x.k])} (skor ${Math.round(res[x.i][x.k].m)}, ${res[x.i][x.k].y.toFixed(1)} t/ha)`).join('; ')}.</div>`;
   $('tp').innerHTML='<tr><th>Pos</th><th>Tanam terbaik</th><th>Varietas</th><th>Skor</th><th>Skor hujan-kering</th><th>Hasil (t/ha)</th></tr>'
-   +D.stations.filter(s=>s.fc&&s.fc.length&&s.clim).map(s=>{const r=plan(s,q),t=bestOf(r);return t?`<tr><td>${s.name}</td><td>${dl(r.t0,r.cols[t.j])}</td><td>${VAR[t.i].n}</td><td>${Math.round(t.c.m)}</td><td>${Math.round(t.c.b)}</td><td>${t.c.y.toFixed(1)}</td></tr>`:'';}).join('');
+   +D.stations.filter(s=>s.fc&&s.fc.length&&s.clim).map(s=>{const r=plan(s,q,potongUmur),t=bestOf(r);return t?`<tr><td>${s.name}</td><td>${dl(r.t0,r.cols[t.j])}</td><td>${VAR[t.i].n}</td><td>${Math.round(t.c.m)}</td><td>${Math.round(t.c.b)}</td><td>${t.c.y.toFixed(1)}</td></tr>`:'';}).join('');
 }
-  /* ===== Dashboard hujan ===== */
+
+/* ===== Dashboard hujan ===== */
 function render(){
   S=D.stations.find(s=>s.id===$('st').value);const o=sc.o,d=sc.d;
   const R=S.fc.map(f=>({f,c:calc(f,'ch',o,d),h:calc(f,'hh',o,d)}));
@@ -186,35 +204,32 @@ function render(){
   tanam();
 }
 
-// Pengambilan data gabungan: JSON dan Google Sheets CSV
 Promise.all([
   fetch(DATA_URL+'?t='+Date.now()).then(r=>r.json()),
   new Promise((resolve, reject) => {
     Papa.parse(SHEET_CSV_URL, {
       download: true,
       header: true,
-      dynamicTyping: true, // Otomatis ubah teks angka di Sheets menjadi Number di JS
+      dynamicTyping: true, 
       skipEmptyLines: true,
       complete: results => resolve(results.data),
       error: err => reject(err)
     });
   })
 ]).then(([r, sheetData]) => {
-  VAR = sheetData; // Memasukkan data dari spreadsheet ke dalam aplikasi
+  VAR = sheetData; 
   
   if(r.error)throw new Error(r.error);
   D=r;const I=r.idx;B=I.hist.some(x=>x.m===12)?1:0; 
   $('meta').textContent=`Data ${r.meta.y0}–${r.meta.y1} · ${r.meta.n} pos · Niño 3.4 terakhir: ${MN[m0(I.m)]} ${I.y} (${f1(I.oni)} °C) · DMI terakhir: ${MN[m0(I.dm)]} ${I.dy} (${f1(I.dmi)} °C) · BoM: ${I.bomMsg} · diperbarui ${r.updated}`;
   $('st').innerHTML=r.stations.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
   
-  // Inisialisasi peta HANYA SEKALI di sini
   map=L.map('map').setView([-4.0894, 120.1601], 10);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
   map.createPane('batas');
   map.getPane('batas').style.zIndex=350; 
   lay=L.layerGroup().addTo(map);
   
-  // Memuat batas wilayah dan menyorot Wajo
   fetch('sulawesi-selatan.json').then(x=>x.json()).then(g=>L.geoJSON(g,{
     pane:'batas',
     interactive:false,
@@ -230,14 +245,13 @@ Promise.all([
     }
   }).addTo(map)).catch(e=>console.error('Gagal memuat batas wilayah:',e));
   
-  // Setup interaksi UI
   const set=(o,d)=>{o=Math.max(-4.5,Math.min(4.5,+o||0));d=Math.max(-2,Math.min(2,+d||0));sc={o,d};$('o').value=o;$('d').value=d;render();};
   set(I.oni,I.dmi);
   $('st').onchange=render;$('wq').onchange=tanam;
   $('o').onchange=$('d').onchange=()=>set($('o').value,$('d').value);
   document.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{const v=b.dataset.s;v==='obs'?set(I.oni,I.dmi):set(...v.split(',').map(Number));});
 }).catch(e=>{
-  $('err').textContent='Gagal memuat data: '+ (e.message || e) + ' (pastikan URL Sheet dan JSON benar)';
+  $('err').textContent='Gagal memuat data: '+ (e.message || e);
   $('meta').textContent='';
 });
 </script></body></html>
