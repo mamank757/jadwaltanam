@@ -22,7 +22,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:6px 8px;b
 .s3{background:#0b8a5f66}.s2{background:#d9770666}.s1{background:#dc262666}
 h3{font-size:17px;margin:22px 0 8px}
 </style></head><body>
-<header><h1>Hujan &amp; Jadwal Tanam Padi Sulawesi Barat</h1><div class="sub" id="meta">Memuat data…</div></header>
+<header><h1>Hujan &amp; Jadwal Tanam Padi Kabupaten Wajo</h1><div class="sub" id="meta">Memuat data…</div></header>
 <main><div id="err"></div>
 <div class="bar">
   <label>Pos <select id="st"></select></label>
@@ -167,11 +167,30 @@ fetch(DATA_URL+'?t='+Date.now()).then(r=>r.json()).then(r=>{
   D=r;const I=r.idx;B=I.hist.some(x=>x.m===12)?1:0; // deteksi bulan 1-12 vs 0-11
   $('meta').textContent=`Data ${r.meta.y0}–${r.meta.y1} · ${r.meta.n} pos · Niño 3.4 terakhir: ${MN[m0(I.m)]} ${I.y} (${f1(I.oni)} °C) · DMI terakhir: ${MN[m0(I.dm)]} ${I.dy} (${f1(I.dmi)} °C) · BoM: ${I.bomMsg} · diperbarui ${r.updated}`;
   $('st').innerHTML=r.stations.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
-  map=L.map('map').setView([-2.4,119.3],7);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
-  map.createPane('batas');map.getPane('batas').style.zIndex=350; // di bawah penanda agar tooltip/klik tidak terhalang
-  lay=L.layerGroup().addTo(map);
-  fetch('sulawesi-selatan.json').then(x=>x.json()).then(g=>L.geoJSON(g,{pane:'batas',interactive:false,style:{color:'#64748b',weight:2,fillOpacity:.1}}).addTo(map))
-    .catch(e=>console.error('Gagal memuat batas wilayah:',e));
+  // 1. Ubah koordinat ke tengah Kabupaten Wajo (-4.0894, 120.1601) dan zoom level ke 10
+map=L.map('map').setView([-4.0894, 120.1601], 10);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
+map.createPane('batas');
+map.getPane('batas').style.zIndex=350;
+lay=L.layerGroup().addTo(map);
+
+// 2. (Opsional) Menyorot poligon Wajo dengan warna berbeda jika menggunakan sulawesi-selatan.json
+fetch('sulawesi-selatan.json').then(x=>x.json()).then(g=>L.geoJSON(g,{
+  pane:'batas',
+  interactive:false,
+  style: function(feature) {
+    // Sesuaikan 'WADMKK' atau 'KABUPATEN' dengan nama properti di dalam file sulawesi-selatan.json Anda
+    let prop = feature.properties;
+    let isWajo = prop && (prop.WADMKK === 'Wajo' || prop.KABUPATEN === 'WAJO' || prop.KABUPATEN === 'Wajo');
+    return {
+      color: isWajo ? '#0b6fa4' : '#64748b',   // Border biru untuk Wajo, abu-abu untuk yang lain
+      weight: isWajo ? 3 : 1,                  // Border lebih tebal untuk Wajo
+      fillColor: isWajo ? '#0b6fa4' : '#64748b',
+      fillOpacity: isWajo ? 0.2 : 0.05         // Fill lebih terang untuk Wajo
+    };
+  }
+}).addTo(map))
+.catch(e=>console.error('Gagal memuat batas wilayah:',e));
   const set=(o,d)=>{o=Math.max(-4.5,Math.min(4.5,+o||0));d=Math.max(-2,Math.min(2,+d||0));sc={o,d};$('o').value=o;$('d').value=d;render();};
   set(I.oni,I.dmi);$('st').onchange=render;$('wq').onchange=tanam;
   $('o').onchange=$('d').onchange=()=>set($('o').value,$('d').value);
