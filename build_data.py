@@ -284,7 +284,7 @@ def main():
     td = max(t for t in dmi if t <= t0)        # DMI terakhir yang tersedia
     st = read_stations()
     reg = lambda k: np.nanmean(np.vstack([s[k] for s in st]), axis=0)
-    allst = [dict(id='SULBAR', name=f'SULBAR (rata-rata {len(st)} pos)', loc='Rata-rata seluruh pos',
+    allst = [dict(id='WAJO', name=f'WAJO (rata-rata {len(st)} pos)', loc='Rata-rata seluruh pos',
                   ch=reg('ch'), hh=reg('hh'))] + st
     hist = [dict(y=t // 12, m=t % 12, oni=oni.get(t), dmi=dmi.get(t)) for t in range(t0 - 35, t0 + 1)]
     out = dict(stations=[build(s, I, t0) for s in allst],
