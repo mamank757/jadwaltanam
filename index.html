@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Hujan &amp; Jadwal Tanam Padi Sulbar</title>
+<title>Hujan &amp; Jadwal Tanam Padi Wajo</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
 <style>
 :root{--bg:#f4f6f9;--cd:#fff;--tx:#1b2430;--mu:#64748b;--bd:#e2e8f0;--ac:#0b6fa4;--bn:#d97706;--nn:#64748b;--an:#0b8a5f}
@@ -46,7 +46,7 @@ h3{font-size:17px;margin:22px 0 8px}
 
 <p class="note"><b>Metode hujan:</b> baseline klimatologi 1999–2024; prediktor anomali Niño 3.4 (CPC, basis 1991–2020, rerata bulanan) dan DMI (NOAA PSL); regresi ridge per pos × bulan × lead dengan validasi leave-one-year-out. Bila skill ≤ ambang (SKMIN), prakiraan kembali ke klimatologi dan peluang = 33/33/33. Sifat hujan (BMKG): Atas Normal &gt;115%, Normal 85–115%, Bawah Normal &lt;85%. Skenario diasumsikan persisten. Dengan n = 26 tahun, korelasi |r| &gt; 0,39 baru signifikan (p&lt;0,05).<br>
 <b>Metode tanam:</b> neraca air harian sederhana. Hujan bulanan dibagi rata per hari (6 bulan pertama = prakiraan sesuai skenario, selanjutnya klimatologi); hujan efektif = 85% hujan (gogo 70%). Kebutuhan air = penyiapan lahan 200 mm/14 hari + ETo×Kc + perkolasi. Defisit yang tak tertutup irigasi diberi bobot sensitivitas per fase (vegetatif 0,25; generatif 0,6; pemasakan 0,25; penyiapan lahan 0,1) menjadi kehilangan hasil; ditambah penalti hujan lebat saat berbunga (&gt;10 mm/hari) dan saat panen (&gt;8 mm/hari). Skor = rerata skenario hujan-prakiraan dan hujan-kering (peluang terlampaui 80%). Umur varietas = hari sebar-panen, bibit dipindah umur 20 hari.<br>
-<b>Asumsi yang perlu dikalibrasi:</b> ETo 4 mm/hari, perkolasi 1,5 mm/hari, pengurang risiko kekeringan varietas toleran 15% per tingkat, hasil lapang = 65% potensi (gogo 45%); peringkat rekomendasi memakai perkiraan hasil, bukan skor. Data varietas (array VAR) bersifat indikatif: cocokkan dengan Deskripsi Varietas Padi resmi dan rekomendasi BPSB/BRMP Sulbar. Model tidak memuat suhu (dataran tinggi Mamasa), tanah, hama-penyakit, atau debit irigasi. Gunakan bersama Kalender Tanam Terpadu Kementan dan produk BMKG.</p></main>
+<b>Asumsi yang perlu dikalibrasi:</b> ETo 4 mm/hari, perkolasi 1,5 mm/hari, pengurang risiko kekeringan varietas toleran 15% per tingkat, hasil lapang = 65% potensi (gogo 45%); peringkat rekomendasi memakai perkiraan hasil, bukan skor. Data varietas (array VAR) bersifat indikatif: cocokkan dengan Deskripsi Varietas Padi resmi dan rekomendasi BPSB/BRMP Sulsel. Model tidak memuat suhu (dataran tinggi Mamasa), tanah, hama-penyakit, atau debit irigasi. Gunakan bersama Kalender Tanam Terpadu Kementan dan produk BMKG.</p></main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <script>
@@ -75,7 +75,7 @@ const C=(id,cfg)=>{if(ch[id])ch[id].destroy();cfg.options=Object.assign({respons
 const VAR=[
  {n:'Ciherang',u:120,y:8.5,k:0,t:'Umum dipakai; butuh air cukup'},
  {n:'Mekongga',u:120,y:8.4,k:0,t:'Populer di Sulawesi'},
- {n:'Inpari 32 HDB',u:120,y:8.4,k:1,t:'Tahan HDB; BRMP Sulbar mendiseminasikan'},
+ {n:'Inpari 32 HDB',u:120,y:8.4,k:1,t:'Tahan HDB; BRMP Sulsel mendiseminasikan'},
  {n:'Inpari 30 Sub1',u:111,y:9.6,k:0,t:'Toleran rendaman ±2 minggu: lahan rawan banjir'},
  {n:'Inpari 38 THA',u:103,y:8.1,k:1,t:'Genjah, untuk tadah hujan'},
  {n:'Inpari 42 GSR',u:112,y:10.6,k:1,t:'Potensi tinggi, genjah'},
