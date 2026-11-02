@@ -170,7 +170,7 @@ fetch(DATA_URL+'?t='+Date.now()).then(r=>r.json()).then(r=>{
   map=L.map('map').setView([-2.4,119.3],7);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
   map.createPane('batas');map.getPane('batas').style.zIndex=350; // di bawah penanda agar tooltip/klik tidak terhalang
   lay=L.layerGroup().addTo(map);
-  fetch('sulawesi-barat.json').then(x=>x.json()).then(g=>L.geoJSON(g,{pane:'batas',interactive:false,style:{color:'#64748b',weight:2,fillOpacity:.1}}).addTo(map))
+  fetch('sulawesi-selatan.json').then(x=>x.json()).then(g=>L.geoJSON(g,{pane:'batas',interactive:false,style:{color:'#64748b',weight:2,fillOpacity:.1}}).addTo(map))
     .catch(e=>console.error('Gagal memuat batas wilayah:',e));
   const set=(o,d)=>{o=Math.max(-4.5,Math.min(4.5,+o||0));d=Math.max(-2,Math.min(2,+d||0));sc={o,d};$('o').value=o;$('d').value=d;render();};
   set(I.oni,I.dmi);$('st').onchange=render;$('wq').onchange=tanam;
