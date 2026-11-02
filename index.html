@@ -47,9 +47,10 @@ h3{font-size:17px;margin:22px 0 8px}
 <p class="note"><b>Metode hujan:</b> baseline klimatologi 1999–2024; prediktor anomali Niño 3.4 (CPC, basis 1991–2020, rerata bulanan) dan DMI (NOAA PSL); regresi ridge per pos × bulan × lead dengan validasi leave-one-year-out. Bila skill ≤ ambang (SKMIN), prakiraan kembali ke klimatologi dan peluang = 33/33/33. Sifat hujan (BMKG): Atas Normal &gt;115%, Normal 85–115%, Bawah Normal &lt;85%. Skenario diasumsikan persisten. Dengan n = 26 tahun, korelasi |r| &gt; 0,39 baru signifikan (p&lt;0,05).<br>
 <b>Metode tanam:</b> neraca air harian sederhana. Hujan bulanan dibagi rata per hari (6 bulan pertama = prakiraan sesuai skenario, selanjutnya klimatologi); hujan efektif = 85% hujan (gogo 70%). Kebutuhan air = penyiapan lahan 200 mm/14 hari + ETo×Kc + perkolasi. Defisit yang tak tertutup irigasi diberi bobot sensitivitas per fase (vegetatif 0,25; generatif 0,6; pemasakan 0,25; penyiapan lahan 0,1) menjadi kehilangan hasil; ditambah penalti hujan lebat saat berbunga (&gt;10 mm/hari) dan saat panen (&gt;8 mm/hari). Skor = rerata skenario hujan-prakiraan dan hujan-kering (peluang terlampaui 80%). Umur varietas = hari sebar-panen, bibit dipindah umur 20 hari.<br>
 <b>Asumsi yang perlu dikalibrasi:</b> ETo 4 mm/hari, perkolasi 1,5 mm/hari, pengurang risiko kekeringan varietas toleran 15% per tingkat, hasil lapang = 65% potensi (gogo 45%); peringkat rekomendasi memakai perkiraan hasil, bukan skor. Data varietas (array VAR) bersifat indikatif: cocokkan dengan Deskripsi Varietas Padi resmi dan rekomendasi BPSB/BRMP Sulsel. Model tidak memuat suhu (dataran tinggi Mamasa), tanah, hama-penyakit, atau debit irigasi. Gunakan bersama Kalender Tanam Terpadu Kementan dan produk BMKG.</p></main>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script>
 const DATA_URL='data.json',SKMIN=0.05;
 const MN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],$=i=>document.getElementById(i);
@@ -59,6 +60,7 @@ const m0=x=>x-B,dim=f=>new Date(f.y,m0(f.m)+1,0).getDate();
 const Phi=x=>{const t=1/(1+.2316419*Math.abs(x)),p=.3989423*Math.exp(-x*x/2)*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));return x>0?1-p:p;};
 const cat=p=>p>115?'AN':p<85?'BN':'N',lab={BN:'Bawah Normal',N:'Normal',AN:'Atas Normal'};
 const ph=(v,t,l)=>v>=t?l[2]:v<=-t?l[0]:l[1],f1=x=>(+x).toFixed(1);
+
 function calc(f,k,o,d){
   const e=f[k],M=e.mod,ok=e.sd>0,use=ok&&!!M&&M.skill>SKMIN,sd=ok?e.sd:0,
   z=use?M.mz+M.b1*(o-M.ma)/M.sa+M.b2*(d-M.mb)/M.sb:0,sg=use?M.rmse:1;
@@ -72,10 +74,10 @@ const card=(a,b,c)=>`<div class="cd"><div class="ks">${a}</div><div class="kv">$
 const C=(id,cfg)=>{if(ch[id])ch[id].destroy();cfg.options=Object.assign({responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:12}}}},cfg.options||{});ch[id]=new Chart($(id),cfg);};
 
 /* ===== Modul jadwal tanam padi ===== */
-// n=nama, u=umur sebar-panen (hari), y=potensi hasil (t/ha), k=toleransi kering (0-2), g=padi gogo, t=catatan. INDIKATIF: verifikasi ke deskripsi varietas resmi.
 let VAR = [];
 const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1d-xYcQxGpiBQKDecFrzHizM031Up23msjtaDVQStLc0/edit?usp=sharing';
 const ETO=4,PERC=1.5,LP=14,NUR=20,KC=[1.05,1.2,.9],KY=[.25,.6,.25];
+
 function series(s,o,d){
   const o2=[],f0=s.fc[0];
   for(let i=0;i<18;i++){
@@ -157,6 +159,7 @@ function render(){
   tanam();
 }
 
+// Pengambilan data gabungan: JSON dan Google Sheets CSV
 Promise.all([
   fetch(DATA_URL+'?t='+Date.now()).then(r=>r.json()),
   new Promise((resolve, reject) => {
@@ -176,47 +179,38 @@ Promise.all([
   D=r;const I=r.idx;B=I.hist.some(x=>x.m===12)?1:0; 
   $('meta').textContent=`Data ${r.meta.y0}–${r.meta.y1} · ${r.meta.n} pos · Niño 3.4 terakhir: ${MN[m0(I.m)]} ${I.y} (${f1(I.oni)} °C) · DMI terakhir: ${MN[m0(I.dm)]} ${I.dy} (${f1(I.dmi)} °C) · BoM: ${I.bomMsg} · diperbarui ${r.updated}`;
   $('st').innerHTML=r.stations.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  
+  // Inisialisasi peta HANYA SEKALI di sini
   map=L.map('map').setView([-4.0894, 120.1601], 10);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
-  map.createPane('batas');map.getPane('batas').style.zIndex=350; 
+  map.createPane('batas');
+  map.getPane('batas').style.zIndex=350; 
   lay=L.layerGroup().addTo(map);
-  fetch('sulawesi-selatan.json').then(x=>x.json()).then(g=>L.geoJSON(g,{pane:'batas',interactive:false,style:{color:'#64748b',weight:2,fillOpacity:.1}}).addTo(map)).catch(e=>console.error('Gagal memuat batas wilayah:',e));
   
+  // Memuat batas wilayah dan menyorot Wajo
+  fetch('sulawesi-selatan.json').then(x=>x.json()).then(g=>L.geoJSON(g,{
+    pane:'batas',
+    interactive:false,
+    style: function(feature) {
+      let prop = feature.properties;
+      let isWajo = prop && (prop.WADMKK === 'Wajo' || prop.KABUPATEN === 'WAJO' || prop.KABUPATEN === 'Wajo');
+      return {
+        color: isWajo ? '#0b6fa4' : '#64748b',
+        weight: isWajo ? 3 : 1,
+        fillColor: isWajo ? '#0b6fa4' : '#64748b',
+        fillOpacity: isWajo ? 0.2 : 0.05
+      };
+    }
+  }).addTo(map)).catch(e=>console.error('Gagal memuat batas wilayah:',e));
+  
+  // Setup interaksi UI
   const set=(o,d)=>{o=Math.max(-4.5,Math.min(4.5,+o||0));d=Math.max(-2,Math.min(2,+d||0));sc={o,d};$('o').value=o;$('d').value=d;render();};
-  set(I.oni,I.dmi);$('st').onchange=render;$('wq').onchange=tanam;
+  set(I.oni,I.dmi);
+  $('st').onchange=render;$('wq').onchange=tanam;
   $('o').onchange=$('d').onchange=()=>set($('o').value,$('d').value);
   document.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{const v=b.dataset.s;v==='obs'?set(I.oni,I.dmi):set(...v.split(',').map(Number));});
 }).catch(e=>{
   $('err').textContent='Gagal memuat data: '+ (e.message || e) + ' (pastikan URL Sheet dan JSON benar)';
   $('meta').textContent='';
 });
-  // 1. Ubah koordinat ke tengah Kabupaten Wajo (-4.0894, 120.1601) dan zoom level ke 10
-map=L.map('map').setView([-4.0894, 120.1601], 10);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
-map.createPane('batas');
-map.getPane('batas').style.zIndex=350;
-lay=L.layerGroup().addTo(map);
-
-// 2. (Opsional) Menyorot poligon Wajo dengan warna berbeda jika menggunakan sulawesi-selatan.json
-fetch('sulawesi-selatan.json').then(x=>x.json()).then(g=>L.geoJSON(g,{
-  pane:'batas',
-  interactive:false,
-  style: function(feature) {
-    // Sesuaikan 'WADMKK' atau 'KABUPATEN' dengan nama properti di dalam file sulawesi-selatan.json Anda
-    let prop = feature.properties;
-    let isWajo = prop && (prop.WADMKK === 'Wajo' || prop.KABUPATEN === 'WAJO' || prop.KABUPATEN === 'Wajo');
-    return {
-      color: isWajo ? '#0b6fa4' : '#64748b',   // Border biru untuk Wajo, abu-abu untuk yang lain
-      weight: isWajo ? 3 : 1,                  // Border lebih tebal untuk Wajo
-      fillColor: isWajo ? '#0b6fa4' : '#64748b',
-      fillOpacity: isWajo ? 0.2 : 0.05         // Fill lebih terang untuk Wajo
-    };
-  }
-}).addTo(map))
-.catch(e=>console.error('Gagal memuat batas wilayah:',e));
-  const set=(o,d)=>{o=Math.max(-4.5,Math.min(4.5,+o||0));d=Math.max(-2,Math.min(2,+d||0));sc={o,d};$('o').value=o;$('d').value=d;render();};
-  set(I.oni,I.dmi);$('st').onchange=render;$('wq').onchange=tanam;
-  $('o').onchange=$('d').onchange=()=>set($('o').value,$('d').value);
-  document.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{const v=b.dataset.s;v==='obs'?set(I.oni,I.dmi):set(...v.split(',').map(Number));});
-}).catch(e=>{$('err').textContent='Gagal memuat data: '+e.message+' (pastikan data.json ada dan GitHub Pages aktif)';$('meta').textContent='';});
 </script></body></html>
