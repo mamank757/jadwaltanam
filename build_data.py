@@ -2,7 +2,7 @@
 """
 Membangun data.json (baseline + prakiraan hujan Sulbar berbasis ENSO/IOD) untuk dashboard GitHub Pages.
 
-Struktur repo (root): index.html, build_data.py, Data_Curah_Hujan_-_Mamuju.xlsx, .github/workflows/update.yml
+Struktur repo (root): index.html, build_data.py, Data_Curah_Hujan_-_Wajo.xlsx, .github/workflows/update.yml
 Lokal : pip install numpy openpyxl requests && python build_data.py
 Sumber: ENSO = anomali Nino 3.4 mingguan CPC (rata-rata bulanan, min. MIN_WEEKS minggu)
         IOD  = DMI bulanan NOAA PSL (riwayat latih) + DMI mingguan BoM (mengisi bulan yang belum rilis, dikalibrasi ke skala PSL)
@@ -16,7 +16,7 @@ import numpy as np, requests
 from openpyxl import load_workbook
 
 warnings.simplefilter('ignore')
-XLSX = 'Data_Curah_Hujan_-_Mamuju.xlsx'
+XLSX = 'Data_Curah_Hujan_-_Wajo.xlsx'
 Y0, Y1, LEADS, MIN_WEEKS = 1999, 2024, 6, 2
 ENSO_URL = 'https://www.cpc.ncep.noaa.gov/data/indices/wksst9120.for'
 DMI_URLS = ['https://psl.noaa.gov/gcos_wgsp/Timeseries/Data/dmi.had.long.data',
