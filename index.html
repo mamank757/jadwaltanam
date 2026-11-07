@@ -106,9 +106,31 @@ const fm=mm=>{const g=(x,k)=>(x>=0?(k?' + ':''):' − ')+Math.abs(x).toFixed(1);
 
 /* ===== Modul jadwal tanam padi ===== */
 let VAR = [];
-// Menggunakan corsproxy.io untuk menjembatani pembatasan CORS Google Sheets secara aman
 const SHEET_CSV_URL = 'https://corsproxy.io/?' + encodeURIComponent('https://docs.google.com/spreadsheets/d/1KuenKsFS4sGWjb8-3NZChcYG7X_kkNye/export?format=csv');
 const ETO=4,PERC=1.5,LP=14,NUR=20,KC=[1.05,1.2,.9],KY=[.25,.6,.25];
+
+// Pembersih data header Google Sheets agar terbaca sempurna
+function cleanVarData(rawList) {
+  return rawList.map(row => {
+    let n = row['n'] || row['Nama Varietas (n)'] || row['Nama Varietas'] || '';
+    let u = row['u'] || row['Umur (hari) (u)'] || row['Umur (hari)'] || row['Umur'] || 120;
+    let y = row['y'] || row['Potensi Hasil (t/ha) (y)'] || row['Potensi Hasil (t/ha)'] || row['Potensi Hasil'] || 8.0;
+    let k = row['k'] || row['Ketahanan (k)'] || row['Ketahanan'] || 0;
+    let g = row['g'] || row['Tipe Lahan/Gogo (g)'] || row['Tipe Lahan/Gogo'] || row['Gogo'] || 0;
+    let a = row['a'] || row['Koef. Gogo (a)'] || row['Koef. Gogo'] || 0.65;
+    let t = row['t'] || row['Keterangan/Deskripsi (t)'] || row['Keterangan/Deskripsi'] || row['Keterangan'] || '';
+    
+    return {
+      n: String(n).trim(),
+      u: parseFloat(u) || 120,
+      y: parseFloat(y) || 8.0,
+      k: parseFloat(k) || 0,
+      g: parseFloat(g) || 0,
+      a: parseFloat(a) || 0.65,
+      t: String(t).trim()
+    };
+  }).filter(item => item.n !== '');
+}
 
 function series(s){
   const o2=[],f0=s.fc[0];
@@ -285,7 +307,7 @@ Promise.all([
       skipEmptyLines: true,
       complete: results => {
         if(results && results.data && results.data.length > 0) {
-          resolve(results.data);
+          resolve(cleanVarData(results.data));
         } else {
           resolve(DEFAULT_VAR);
         }
