@@ -56,8 +56,16 @@ h3{font-size:17px;margin:22px 0 8px}
     <option value="tapin">Tapin (Tanam Pindah)</option>
     <option value="tabela">Tabela (Tanam Benih Langsung)</option>
   </select>
+  <label for="mu" style="margin-left:12px">Tanam utama dimulai bulan:</label>
+  <select id="mu" onchange="tanam()">
+    <option value="a">Otomatis (hasil tertinggi)</option>
+    <option value="0">Jan</option><option value="1">Feb</option><option value="2">Mar</option><option value="3">Apr</option>
+    <option value="4" selected>Mei (kebiasaan lapang Wajo)</option><option value="5">Jun</option><option value="6">Jul</option><option value="7">Agu</option>
+    <option value="8">Sep</option><option value="9">Okt</option><option value="10">Nov</option><option value="11">Des</option>
+  </select>
 </div>
   <div class="cd" id="rec" style="margin-bottom:12px"></div>
+<div class="cd" id="duo" style="margin-bottom:12px"></div>
 <div class="cd" style="margin-bottom:12px"><h2>Skor kelayakan (0–100): varietas × tanggal pindah tanam</h2><div id="hm"></div><p class="note">Hijau ≥75 layak · oranye 55–74 waspada · merah &lt;55 hindari. Arahkan kursor ke sel untuk rincian.</p></div>
 <div class="cd" style="margin-bottom:12px"><h2>Tanggal tanam terbaik per pos</h2><table id="tp"></table></div>
 
@@ -161,6 +169,31 @@ function plan(s, q, potongUmur = 0){
 const dl=(t0,T)=>{const x=new Date(t0.getFullYear(),t0.getMonth(),1+T);return x.getDate()+' '+MN[x.getMonth()];};
 const bestOf=R=>{let b=null;R.res.forEach((r,i)=>r.forEach((c,j)=>{if(c&&(!b||c.y>b.c.y))b={i,j,c};}));return b;};
 
+/* Pola dua kali tanam setahun: tanam utama (bulan dipilih) + tanam kedua sebelum / sesudahnya.
+   Syarat: lahan baru disiapkan setelah panen sebelumnya (penyiapan lahan LP hari sebelum pindah tanam), total rentang <= 365 hari.
+   Pemilihan varietas & tanggal memaksimalkan jumlah hasil dua musim. */
+const dly=(t0,T)=>{const x=new Date(t0.getFullYear(),t0.getMonth(),1+T);return x.getDate()+' '+MN[x.getMonth()]+' '+x.getFullYear();};
+function duo(R,pu){
+  const{t0,cols,res}=R,mu=$('mu').value,el=$('duo'),K=[];
+  res.forEach((row,i)=>row.forEach((c,j)=>{if(c){const v=VAR[i],Dc=v.u-pu-(pu>0?0:NUR),T=cols[j];K.push({i,j,T,lp:v.g?0:LP,end:T+Dc,c});}}));
+  const mon=x=>new Date(t0.getFullYear(),t0.getMonth(),1+x.T).getMonth(),M=K.filter(x=>mu==='a'||mon(x)===+mu);
+  const best=pre=>{let b=null;M.forEach(m=>K.forEach(s=>{
+    const ok=pre?(s.end<=m.T-m.lp&&s.T-s.lp>=0&&m.end-s.T<=365):(s.T-s.lp>=m.end&&s.end-m.T<=365);
+    if(ok&&(!b||s.c.y+m.c.y>b.tot))b={m,s,tot:s.c.y+m.c.y};}));return b;};
+  const row=(lb,x)=>`<tr><td>${lb}</td><td>${VAR[x.i].n}</td><td>${dly(t0,x.T)}</td><td>${dly(t0,x.end)}</td><td>${Math.round(x.c.m)}</td><td>${Math.round(x.c.b)}</td><td>${x.c.y.toFixed(1)}</td><td>${x.c.fc?'prakiraan':'klimatologi (sebagian/seluruh)'}</td></tr>`;
+  const head='<tr><th>Musim</th><th>Varietas</th><th>Pindah tanam</th><th>Panen (≈)</th><th>Skor</th><th>Skor hujan-kering</th><th>Hasil (t/ha)</th><th>Dasar hujan</th></tr>';
+  const pre=best(true),post=best(false),mn=mu==='a'?'terbaik':MN[+mu];
+  let h='<h2>Pola dua kali tanam setahun — tanam utama '+mn+' · pos '+S.name+'</h2>';
+  if(!M.length)h+='<p class="note">Tidak ada jendela tanam utama pada bulan '+mn+' dalam cakupan simulasi (18 bulan dari prakiraan).</p>';
+  else{
+    const blk=(t,b,rows)=>b?`<p style="margin:8px 0 4px"><b>${t}</b> — jumlah hasil dua musim ≈ <b>${b.tot.toFixed(1)} t/ha</b></p><table>${head}${rows}</table>`:`<p class="note"><b>${t}</b>: tidak ada kombinasi yang muat (lahan harus dipanen dulu, rentang ≤ 365 hari).</p>`;
+    h+=blk('Pola 1: tanam kedua SEBELUM tanam utama (musim hujan yang sedang berjalan)',pre,pre?row('Tanam kedua',pre.s)+row('Tanam utama',pre.m):'');
+    h+=blk('Pola 2: tanam utama, lalu tanam kedua SESUDAHNYA (musim hujan berikutnya)',post,post?row('Tanam utama',post.m)+row('Tanam kedua',post.s):'');
+    h+='<p class="note">Prakiraan ENSO/IOD hanya mencakup 6 bulan pertama; bulan sesudahnya memakai klimatologi, sehingga musim utama Mei dan tanam kedua tahun depan <b>belum mencerminkan skenario ONI yang dipilih</b>. Bila El Niño bertahan sampai Mei–Sep, hujan Jul–Okt lebih rendah dari klimatologi (hubungan ONI–hujan kuat pada bulan-bulan itu) dan skor tanam utama Mei akan turun. Persemaian (20 hari sebelum pindah tanam) tidak dihitung kebutuhan airnya.</p>';
+  }
+  el.innerHTML=h;
+}
+
 function tanam(){
   const metode = $('metode') ? $('metode').value : 'tapin';
   const potongUmur = (metode === 'tabela') ? 10 : 0; 
@@ -192,6 +225,7 @@ function tanam(){
   const ok=res[b.i].map((c,j)=>c&&c.m>=75?dl(t0,cols[j]):null).filter(Boolean);
   $('rec').innerHTML=`<h2>Rekomendasi pos ${S.name}</h2><p style="margin:0 0 6px"><b>Pindah tanam ±${dl(t0,cols[b.j])}</b> dengan <b>${VAR[b.i].n}</b>: skor ${Math.round(b.c.m)} (hujan-kering ${Math.round(b.c.b)}), hasil lapang indikatif ≈ ${b.c.y.toFixed(1)} t/ha.</p>
   <div class="note">Jendela layak (skor ≥75) untuk ${VAR[b.i].n}: ${ok.join(', ')||'tidak ada'}.<br>Varietas pada tanggal terbaiknya: ${per.map(x=>`${VAR[x.i].n} → ${dl(t0,cols[x.k])} (skor ${Math.round(res[x.i][x.k].m)}, ${res[x.i][x.k].y.toFixed(1)} t/ha)`).join('; ')}.</div>`;
+  duo(R,potongUmur);
   $('tp').innerHTML='<tr><th>Pos</th><th>Tanam terbaik</th><th>Varietas</th><th>Skor</th><th>Skor hujan-kering</th><th>Hasil (t/ha)</th></tr>'
    +D.stations.filter(s=>s.fc&&s.fc.length&&s.clim).map(s=>{const r=plan(s,q,potongUmur),t=bestOf(r);return t?`<tr><td>${s.name}</td><td>${dl(r.t0,r.cols[t.j])}</td><td>${VAR[t.i].n}</td><td>${Math.round(t.c.m)}</td><td>${Math.round(t.c.b)}</td><td>${t.c.y.toFixed(1)}</td></tr>`:'';}).join('');
 }
