@@ -5,7 +5,7 @@ Membangun data.json untuk dashboard GitHub Pages dengan LOGIKA YANG SAMA DENGAN 
 Uji_DMI, FDR_DMI, Model_ONI_DMI, Skenario, Skenario_DMI).
 
 Struktur repo (root): index.html, build_data.py, Data_Curah_Hujan_Wajo_Model_ENSO_IOD*.xlsx, .github/workflows/update.yml
-Lokal : pip install numpy scipy openpyxl requests && python build_data.py
+Lokal : pip install numpy openpyxl requests   (scipy opsional) && python build_data.py
 
 Alur (identik dengan Excel):
   1. Hujan bulanan 14 kecamatan (sheet kecamatan, baris 'CURAH HUJAN BULANAN'); WILAYAH = rata-rata aritmetik 14 kecamatan.
@@ -26,7 +26,53 @@ bila unduhan gagal dipakai cache/ lalu nilai terakhir di sheet oni/dmi Excel. Pe
 import datetime as dt, glob, json, math, os, pathlib, re, warnings
 import numpy as np, requests
 from openpyxl import load_workbook
-from scipy.stats import t as tdist
+try:
+    from scipy.stats import t as tdist
+except ImportError:  # tanpa scipy: distribusi t dihitung sendiri (beta tak-lengkap terregularisasi)
+    class tdist:
+        @staticmethod
+        def _betacf(a, b, x):
+            qab, qap, qam = a + b, a + 1, a - 1
+            c, d = 1.0, 1 - qab * x / qap
+            d = 1 / (d if abs(d) > 1e-300 else 1e-300); h = d
+            for m in range(1, 300):
+                m2 = 2 * m
+                aa = m * (b - m) * x / ((qam + m2) * (a + m2))
+                d = 1 + aa * d; d = 1 / (d if abs(d) > 1e-300 else 1e-300)
+                c = 1 + aa / c; c = c if abs(c) > 1e-300 else 1e-300
+                h *= d * c
+                aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2))
+                d = 1 + aa * d; d = 1 / (d if abs(d) > 1e-300 else 1e-300)
+                c = 1 + aa / c; c = c if abs(c) > 1e-300 else 1e-300
+                de = d * c; h *= de
+                if abs(de - 1) < 1e-14:
+                    break
+            return h
+
+        @staticmethod
+        def _ibeta(a, b, x):
+            if x <= 0: return 0.0
+            if x >= 1: return 1.0
+            bt = math.exp(math.lgamma(a + b) - math.lgamma(a) - math.lgamma(b) + a * math.log(x) + b * math.log(1 - x))
+            if x < (a + 1) / (a + b + 2):
+                return bt * tdist._betacf(a, b, x) / a
+            return 1 - bt * tdist._betacf(b, a, 1 - x) / b
+
+        @staticmethod
+        def sf(x, df):  # P(T > x)
+            tail = 0.5 * tdist._ibeta(df / 2, 0.5, df / (df + x * x))
+            return tail if x >= 0 else 1 - tail
+
+        @staticmethod
+        def ppf(q, df):  # kuantil, bisection
+            if q == 0.5: return 0.0
+            if q < 0.5: return -tdist.ppf(1 - q, df)
+            lo, hi = 0.0, 1e3
+            for _ in range(200):
+                mid = (lo + hi) / 2
+                if 1 - tdist.sf(mid, df) < q: lo = mid
+                else: hi = mid
+            return (lo + hi) / 2
 
 warnings.simplefilter('ignore')
 LEADS = 6
