@@ -435,7 +435,7 @@ def main():
     if u:
         try:
             r = requests.get(u, timeout=120); r.raise_for_status()
-            pathlib.Path(os.environ.get('XLSX') or 'Data_Curah_Hujan_Wajo_Model_ENSO_IOD.xlsx').write_bytes(r.content)
+            pathlib.Path(os.environ.get('XLSX') or 'Data_Curah_Hujan_-_Wajo.xlsx').write_bytes(r.content)
             print('Excel diambil dari Google Sheets')
         except Exception as e:
             print('Gagal ambil Google Sheets, memakai file xlsx di repo:', e)
