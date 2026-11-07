@@ -11,7 +11,7 @@ header{padding:16px 20px;border-bottom:1px solid var(--bd);background:var(--cd)}
 .sub{color:var(--mu);font-size:12px;margin-top:2px}main{padding:16px 20px;max-width:1300px;margin:auto}
 .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
 select,input,button{font:inherit;padding:6px 8px;border:1px solid var(--bd);border-radius:6px;background:var(--cd);color:var(--tx)}
-input{width:70px}button{cursor:pointer}button:hover{border-color:var(--ac)}
+input{width:84px}button{cursor:pointer}button:hover{border-color:var(--ac)}
 .g{display:grid;gap:12px;margin-bottom:12px}.k{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}.c2{grid-template-columns:repeat(auto-fit,minmax(380px,1fr))}
 .cd{background:var(--cd);border:1px solid var(--bd);border-radius:10px;padding:12px;overflow:auto}
 .kv{font-size:22px;font-weight:600}.ks{color:var(--mu);font-size:12px}.cv{position:relative;height:260px}#map{height:300px;border-radius:8px}
@@ -19,10 +19,10 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:6px 8px;b
 .BN{color:var(--bn);font-weight:600}.N{color:var(--nn);font-weight:600}.AN{color:var(--an);font-weight:600}
 .note{color:var(--mu);font-size:12px;line-height:1.5}#err{color:#dc2626;padding:20px}
 .hm{font-size:11px}.hm th,.hm td{text-align:center;padding:4px 5px}.hm th:first-child,.hm td:first-child{text-align:left;position:sticky;left:0;background:var(--cd)}
-/* Warna heatmap bawaan */
 .s3{background:#0b8a5f66}.s2{background:#d9770666}.s1{background:#dc262666}
-/* Biru terang khusus untuk tanggal tanam terbaik tiap varietas */
 .s4{background:#0b6fa4;color:#fff;font-weight:bold;box-shadow:inset 0 0 0 2px #38bdf8}
+.mt{font-size:12px}.mt th,.mt td{padding:5px 7px}.mt .fm{text-align:left;font-family:ui-monospace,monospace;font-size:11px}
+.BDI{font-weight:600}.Kuat{color:var(--an);font-weight:600}.Indikatif{color:var(--bn);font-weight:600}
 .input-group{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
 h3{font-size:17px;margin:22px 0 8px}
 </style></head><body>
@@ -30,16 +30,19 @@ h3{font-size:17px;margin:22px 0 8px}
 <main><div id="err"></div>
 <div class="bar">
   <label>Pos <select id="st"></select></label>
-  <span>Skenario Niño 3.4 <input id="o" type="number" step="0.1" min="-4.5" max="4.5"> DMI <input id="d" type="number" step="0.1" min="-2" max="2"></span>
-  <button data-s="obs">Observasi terakhir</button><button data-s="1,0">El Niño (+1,0)</button><button data-s="-1,0">La Niña (−1,0)</button>
-  <button data-s="0,.8">IOD+ (+0,8)</button><button data-s="0,-.8">IOD− (−0,8)</button><button data-s="0,0">Netral</button>
+  <span>Skenario ONI <input id="o" type="number" step="0.1" min="-4.5" max="4.5"> DMI <input id="d" type="number" step="0.1" min="-2" max="2"></span>
+  <button data-s="obs" title="Memakai ONI/DMI teramati pada bulan (target − lag) bila sudah ada; selebihnya nilai terakhir">Observasi terakhir</button>
+  <button data-s="0,0">Netral</button><button data-s="-1.5,0">La Niña kuat (−1,5)</button><button data-s="-.75,0">La Niña lemah (−0,75)</button>
+  <button data-s="0.75,0">El Niño lemah (+0,75)</button><button data-s="1.5,0">El Niño kuat (+1,5)</button>
+  <button data-s="2.5,1">El Niño kuat + IOD+ (2,5 / +1)</button><button data-s="-.75,-.5">La Niña lemah + IOD− (−0,75 / −0,5)</button><button data-s="0.75,-.5">El Niño lemah + IOD− (0,75 / −0,5)</button>
 </div>
 <div class="g k" id="k"></div>
 <div class="g c2"><div class="cd"><h2>Baseline klimatologi bulanan (CH &amp; hari hujan)</h2><div class="cv"><canvas id="c1"></canvas></div></div>
-<div class="cd"><h2>Prakiraan curah hujan 6 bulan ke depan</h2><div class="cv"><canvas id="c2"></canvas></div></div></div>
+<div class="cd"><h2>Prakiraan curah hujan 6 bulan ke depan (selang prediksi)</h2><div class="cv"><canvas id="c2"></canvas></div></div></div>
 <div class="cd" style="margin-bottom:12px"><h2>Tabel prakiraan</h2><table id="tb"></table></div>
-<div class="g c2"><div class="cd"><h2>Korelasi CH vs Niño 3.4 &amp; DMI per bulan (1999–2024)</h2><div class="cv"><canvas id="c3"></canvas></div></div>
-<div class="cd"><h2>Niño 3.4 &amp; DMI 36 bulan terakhir</h2><div class="cv"><canvas id="c4"></canvas></div></div></div>
+<div class="cd" style="margin-bottom:12px"><h2 id="tmh">Model per bulan</h2><table id="tm" class="mt"></table><p class="note">Sama dengan sheet Ringkasan/Model_Stasiun/Model_ONI_DMI Excel. Bukti: Kuat = lolos FDR Benjamini-Hochberg (84 uji per seri), Indikatif = p &lt; α tetapi tidak lolos FDR. Model dipakai: ONI+DMI bila DMI menambah, ONI saja bila layak, selain itu klimatologi.</p></div>
+<div class="g c2"><div class="cd"><h2 id="c3h">Korelasi CH vs ONI (lag terpilih) &amp; DMI (parsial) per bulan</h2><div class="cv"><canvas id="c3"></canvas></div></div>
+<div class="cd"><h2>ONI &amp; DMI (dihaluskan 3 bulan) 36 bulan terakhir</h2><div class="cv"><canvas id="c4"></canvas></div></div></div>
 <div class="cd"><h2>Peta pos hujan — sifat hujan total 3 bulan ke depan</h2><div id="map"></div></div>
 
 <h3>Analisis jadwal tanam &amp; varietas padi</h3>
@@ -55,7 +58,7 @@ h3{font-size:17px;margin:22px 0 8px}
 <div class="cd" style="margin-bottom:12px"><h2>Skor kelayakan (0–100): varietas × tanggal pindah tanam</h2><div id="hm"></div><p class="note">Hijau ≥75 layak · oranye 55–74 waspada · merah &lt;55 hindari. Arahkan kursor ke sel untuk rincian.</p></div>
 <div class="cd" style="margin-bottom:12px"><h2>Tanggal tanam terbaik per pos</h2><table id="tp"></table></div>
 
-<p class="note"><b>Metode hujan:</b> baseline klimatologi 1999–2024; prediktor anomali Niño 3.4 (CPC, basis 1991–2020, rerata bulanan) dan DMI (NOAA PSL); regresi ridge per pos × bulan × lead dengan validasi leave-one-year-out. Bila skill ≤ ambang (SKMIN), prakiraan kembali ke klimatologi dan peluang = 33/33/33. Sifat hujan (BMKG): Atas Normal &gt;115%, Normal 85–115%, Bawah Normal &lt;85%. Skenario diasumsikan persisten. Dengan n = 26 tahun, korelasi |r| &gt; 0,39 baru signifikan (p&lt;0,05).<br>
+<p class="note"><b>Metode hujan (mengikuti workbook Excel “Model ENSO IOD per Kecamatan”):</b> curah hujan bulanan grid per kecamatan 1995–2025 (WILAYAH = rata-rata aritmetik 14 kecamatan); prediktor ONI v6 (NOAA CPC) dan DMI (NOAA PSL, dihaluskan rata-rata 3 bulan). Untuk tiap kecamatan × bulan target dipilih lag ONI 0–6 bulan dengan p terkecil (korelasi Pearson, uji t dua sisi); bukti dikoreksi FDR Benjamini-Hochberg per seri (84 uji). Model OLS R̂ = a + b·ONI(bulan − lag) dipakai bila n ≥ batas, MSESS validasi leave-one-year-out &gt; ambang dan bukti Kuat/Indikatif; model gabungan ONI+DMI dipakai hanya bila DMI (korelasi parsial) menambah (p b2 &lt; α, bukti DMI, ΔMSESS &gt; ambang). Selain itu prakiraan = klimatologi. Selang prediksi (1−α) memakai distribusi t dengan df n−3 / n−2 / n−1 dan batas bawah ≥ 0. Semua ambang dibaca dari sheet Parameter Excel. Sifat hujan (BMKG): Atas Normal &gt;115%, Normal 85–115%, Bawah Normal &lt;85% dari rata-rata. Skenario ONI/DMI diasumsikan tetap; pada mode “Observasi terakhir” dipakai ONI/DMI teramati pada bulan (target − lag) bila sudah tersedia, selebihnya nilai terakhir. Dengan n = 31 tahun, korelasi |r| &gt; 0,36 baru signifikan (p&lt;0,05) per uji tunggal. Hari hujan hanya klimatologi stasiun lama 1998–2024 (tidak sepadan dengan hujan grid, tidak dimodelkan).<br>
 <b>Metode tanam:</b> neraca air harian sederhana. Hujan bulanan dibagi rata per hari (6 bulan pertama = prakiraan sesuai skenario, selanjutnya klimatologi); hujan efektif = 85% hujan (gogo 70%). Kebutuhan air = penyiapan lahan 200 mm/14 hari + ETo×Kc + perkolasi. Defisit yang tak tertutup irigasi diberi bobot sensitivitas per fase (vegetatif 0,25; generatif 0,6; pemasakan 0,25; penyiapan lahan 0,1) menjadi kehilangan hasil; ditambah penalti hujan lebat saat berbunga (&gt;10 mm/hari) dan saat panen (&gt;8 mm/hari). Skor = rerata skenario hujan-prakiraan dan hujan-kering (peluang terlampaui 80%). Umur varietas = hari sebar-panen, bibit dipindah umur 20 hari.<br>
 <b>Asumsi yang perlu dikalibrasi:</b> ETo 4 mm/hari, perkolasi 1,5 mm/hari, pengurang risiko kekeringan varietas toleran 15% per tingkat, hasil lapang = 65% potensi (gogo 45%); peringkat rekomendasi memakai perkiraan hasil, bukan skor. Data varietas (array VAR) bersifat indikatif: cocokkan dengan Deskripsi Varietas Padi resmi dan rekomendasi BPSB/BRMP Sulsel. Model tidak memuat suhu (dataran tinggi Mamasa), tanah, hama-penyakit, atau debit irigasi. Gunakan bersama Kalender Tanam Terpadu Kementan dan produk BMKG.</p></main>
 
@@ -63,54 +66,54 @@ h3{font-size:17px;margin:22px 0 8px}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script>
-const DATA_URL='data.json',SKMIN=0.05;
+const DATA_URL='data.json';
 const MN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],$=i=>document.getElementById(i);
 const COL={BN:'#d97706',N:'#64748b',AN:'#0b8a5f'};
-let D,S,sc={o:0,d:0},ch={},map,lay,B=0;
-const m0=x=>x-B,dim=f=>new Date(f.y,m0(f.m)+1,0).getDate();
-const Phi=x=>{const t=1/(1+.2316419*Math.abs(x)),p=.3989423*Math.exp(-x*x/2)*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));return x>0?1-p:p;};
+let D,S,I,HM={},sc={obs:true,o:0,d:0},ch={},map,lay,B=0;
+const m0=x=>x-B;
 const cat=p=>p>115?'AN':p<85?'BN':'N',lab={BN:'Bawah Normal',N:'Normal',AN:'Atas Normal'};
-const ph=(v,t,l)=>v>=t?l[2]:v<=-t?l[0]:l[1],f1=x=>(+x).toFixed(1);
+const ph=(v,t,l)=>v>=t?l[2]:v<=-t?l[0]:l[1],f1=x=>(+x).toFixed(1),f2=x=>(+x).toFixed(2);
 
-function calc(f, k, o, d){
-  const e = f[k];
-  // Pengaman jika struktur 'mod' tidak ada atau menggunakan format skrip baru
-  const M = e.mod || (e.basis ? { skill: e.basis !== 'Klimatologi' ? 1 : 0, mz: e.mean, b1: e.b || 0, b2: e.b2 || 0, sa: 1, sb: 1, ma: 0, mb: 0, rmse: e.sd || 1 } : null);
-  const ok = e.sd > 0, use = ok && !!M && (M.skill > SKMIN || e.basis && e.basis !== 'Klimatologi'), sd = ok ? e.sd : 0;
-  
-  let z = 0;
-  if(use && M) {
-    if(M.mz != null && M.b1 != null) {
-      z = (M.mz + (M.b1 * ((o - (M.ma || 0)) / (M.sa || 1))) + ((M.b2 || 0) * ((d - (M.mb || 0)) / (M.sb || 1)))) - (e.mean || 0);
-      z = z / (sd || 1);
-    }
-  }
-  const sg = use && M && M.rmse ? M.rmse / (sd || 1) : 1;
-  let v = Math.max(0, e.mean + (z * sd));
-  if(k === 'hh') v = Math.min(v, dim(f));
-  
-  let bn = 1/3, an = 1/3;
-  if(use && sd > 0){
-    bn = Phi(((e.p33 - e.mean) / sd - z) / (sg || 1));
-    an = 1 - Phi(((e.p67 - e.mean) / sd - z) / (sg || 1));
-  }
-  return { v, bn, an, n: 1 - bn - an, use, r: M && M.r ? M.r : 0, pct: e.mean ? v / e.mean * 100 : 100, sd: (sg || 1) * sd };
+function pred(mm,o,d){
+  let v,se,t;
+  if(mm.basis==='ONI+DMI'){
+    const c=mm.c,xo=o-c.xo,xd=d-c.xd;
+    v=c.a+c.b1*o+c.b2*d;
+    se=c.s*Math.sqrt(1+1/mm.n+(c.sdd*xo*xo-2*c.sod*xo*xd+c.soo*xd*xd)/(c.soo*c.sdd-c.sod*c.sod));t=mm.t3;
+  }else if(mm.basis==='ONI saja'){
+    v=mm.a+mm.b*o;se=mm.s*Math.sqrt(1+1/mm.n+(o-mm.xbar)*(o-mm.xbar)/mm.sxx);t=mm.t2;
+  }else{v=mm.mean;se=mm.sd*Math.sqrt(1+1/mm.n);t=mm.t1;}
+  if(mm.basis!=='Klimatologi')v=Math.max(0,v);
+  return{v,se,lo:Math.max(0,v-t*se),hi:v+t*se};
 }
-const fc3=(s,o,d)=>{let v=0,m=0;s.fc.slice(0,3).forEach(f=>{v+=calc(f,'ch',o,d).v;m+=f.ch.mean;});return v/m*100;};
+
+function pv(f,mm){
+  if(!sc.obs)return{o:sc.o,d:sc.d};
+  const t=f.y*12+f.m,g=(L,k)=>{const x=HM[t-L];return x&&x[k]!=null?x[k]:null;},o=g(mm.lag,'oni'),d=g(mm.lagD,'dmi');
+  return{o:o!=null?o:I.oni,d:d!=null?d:I.dmi,po:o==null,pd:d==null};
+}
+function calc(s,f){
+  const mm=s.mon[f.m],x=pv(f,mm),r=pred(mm,x.o,x.d);
+  return{...r,pct:mm.mean?r.v/mm.mean*100:100,mm,o:x.o,d:x.d,use:mm.basis!=='Klimatologi'};
+}
+const fc3=s=>{let v=0,m=0;s.fc.slice(0,3).forEach(f=>{v+=calc(s,f).v;m+=s.mon[f.m].mean;});return v/m*100;};
 const card=(a,b,c)=>`<div class="cd"><div class="ks">${a}</div><div class="kv">${b}</div><div class="ks">${c}</div></div>`;
 const C=(id,cfg)=>{if(ch[id])ch[id].destroy();cfg.options=Object.assign({responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:12}}}},cfg.options||{});ch[id]=new Chart($(id),cfg);};
+const fm=mm=>{const g=(x,k)=>(x>=0?(k?' + ':''):' − ')+Math.abs(x).toFixed(1);
+  if(mm.basis==='ONI+DMI'){const c=mm.c;return 'R̂ = '+c.a.toFixed(1)+g(c.b1,1)+' × ONI(bln−'+mm.lag+')'+g(c.b2,1)+' × DMI(bln−'+mm.lagD+')';}
+  if(mm.basis==='ONI saja')return 'R̂ = '+mm.a.toFixed(1)+g(mm.b,1)+' × ONI(bln−'+mm.lag+')';
+  return 'R̂ = rata-rata '+mm.mean.toFixed(1)+' mm';};
 
 /* ===== Modul jadwal tanam padi ===== */
 let VAR = [];
-// Link yang sudah diperbaiki (ID yang benar: 1d-xYcXqGpiBKDecFrzHizM031Up23msjtaDVQStLc0)
 const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1d-xYcXqGpiBKDecFrzHizM031Up23msjtaDVQStLc0/export?format=csv';
 const ETO=4,PERC=1.5,LP=14,NUR=20,KC=[1.05,1.2,.9],KY=[.25,.6,.25];
 
-function series(s,o,d){
+function series(s){
   const o2=[],f0=s.fc[0];
   for(let i=0;i<18;i++){
     const a=m0(f0.m)+i,mm=a%12,yy=f0.y+Math.floor(a/12),n=new Date(yy,mm+1,0).getDate(),f=s.fc[i];let v,sd;
-    if(f){const c=calc(f,'ch',o,d);v=c.v;sd=c.sd;}
+    if(f){const c=calc(s,f);v=c.v;sd=c.se;}
     else{const e=s.clim.ch[mm];v=e.mean;sd=e.sd>0?e.sd:(e.p67-e.p33)/.8613;}
     o2.push({y:yy,m:mm,n,v,p80:Math.max(0,v-.84*sd),fc:!!f});
   }
@@ -141,7 +144,7 @@ function sim(dy,T,v,q, potongUmur){
 }
 
 function plan(s, q, potongUmur = 0){
-  const ser=series(s,sc.o,sc.d),dy=days(ser),t0=new Date(ser[0].y,ser[0].m,1),cols=[];
+  const ser=series(s),dy=days(ser),t0=new Date(ser[0].y,ser[0].m,1),cols=[];
   for(let T=14;T<dy.a.length-90;T+=15)cols.push(T);
   return{t0,cols,res:VAR.map(v=>cols.map(T=>sim(dy,T,v,q, potongUmur)))};
 }
@@ -185,41 +188,46 @@ function tanam(){
 
 /* ===== Dashboard hujan ===== */
 function render(){
-  S=D.stations.find(s=>s.id===$('st').value);const o=sc.o,d=sc.d;
-  const R=S.fc.map(f=>({f,c:calc(f,'ch',o,d),h:calc(f,'hh',o,d)}));
-  const tot=n=>{const v=R.slice(0,n).reduce((s,x)=>s+x.c.v,0),m=R.slice(0,n).reduce((s,x)=>s+x.f.ch.mean,0);return[v,v/m*100];};
+  S=D.stations.find(s=>s.id===$('st').value);
+  const o=sc.obs?I.oni:sc.o,d=sc.obs?I.dmi:sc.d,al=D.meta.alpha,ci=Math.round((1-al)*100);
+  const R=S.fc.map(f=>({f,c:calc(S,f)}));
+  const tot=n=>{const v=R.slice(0,n).reduce((s,x)=>s+x.c.v,0),m=R.slice(0,n).reduce((s,x)=>s+x.c.mm.mean,0);return[v,v/m*100];};
   const[v3,p3]=tot(3),[v6,p6]=tot(R.length),nu=R.filter(x=>x.c.use).length;
-  $('k').innerHTML=card('ENSO (Niño 3.4)',f1(o)+' °C',ph(o,.5,['La Niña','Netral','El Niño']))+card('IOD (DMI)',f1(d)+' °C',ph(d,.4,['IOD Negatif','Netral','IOD Positif']))
+  $('k').innerHTML=card('ENSO (ONI)'+(sc.obs?' · teramati':''),f1(o)+' °C',ph(o,.5,['La Niña','Netral','El Niño']))+card('IOD (DMI, dihaluskan)'+(sc.obs?' · teramati':''),f1(d)+' °C',ph(d,.4,['IOD Negatif','Netral','IOD Positif']))
    +card('Total 3 bulan',Math.round(v3)+' mm',Math.round(p3)+'% normal · <b class="'+cat(p3)+'">'+lab[cat(p3)]+'</b>')
    +card('Total 6 bulan',Math.round(v6)+' mm',Math.round(p6)+'% normal · <b class="'+cat(p6)+'">'+lab[cat(p6)]+'</b>')
-   +card('Sinyal ENSO/IOD',nu+' / '+R.length+' bulan','bulan dengan skill model &gt; '+SKMIN+' (selebihnya klimatologi)');
+   +card('Bulan memakai model ENSO/IOD',nu+' / '+R.length,'lolos kriteria Excel (bukti, MSESS &gt; '+D.meta.minMsess+'); selebihnya klimatologi');
   const LB=S.fc.map(f=>MN[m0(f.m)]+' '+f.y),cl=S.clim;
   C('c1',{type:'bar',data:{labels:MN,datasets:[
     {type:'bar',label:'CH rata-rata (mm)',data:cl.ch.map(x=>x.mean),backgroundColor:'#0b6fa4aa'},
     {type:'line',label:'P33',data:cl.ch.map(x=>x.p33),borderColor:COL.BN,borderDash:[4,3],pointRadius:0},
     {type:'line',label:'P67',data:cl.ch.map(x=>x.p67),borderColor:COL.AN,borderDash:[4,3],pointRadius:0},
-    {type:'line',label:'Hari hujan',data:cl.hh.map(x=>x.mean),borderColor:'#7c3aed',yAxisID:'y2',tension:.3}]},
+    {type:'line',label:'Hari hujan (data stasiun lama)',data:cl.hh.map(x=>x.mean),borderColor:'#7c3aed',yAxisID:'y2',tension:.3}]},
     options:{scales:{y:{title:{display:true,text:'mm'}},y2:{position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'hari'}}}}});
   C('c2',{type:'bar',data:{labels:LB,datasets:[
     {type:'bar',label:'Prakiraan (mm)',data:R.map(x=>x.c.v),backgroundColor:R.map(x=>COL[cat(x.c.pct)])},
-    {type:'line',label:'Normal',data:S.fc.map(f=>f.ch.mean),borderColor:'#0b6fa4',pointRadius:3},
-    {type:'line',label:'P33',data:S.fc.map(f=>f.ch.p33),borderColor:COL.BN,borderDash:[4,3],pointRadius:0},
-    {type:'line',label:'P67',data:S.fc.map(f=>f.ch.p67),borderColor:COL.AN,borderDash:[4,3],pointRadius:0}]}});
-  $('tb').innerHTML='<tr><th>Bulan</th><th>CH normal</th><th>CH prakiraan</th><th>% normal</th><th>Sifat</th><th>P(BB / N / AB) %</th><th>Hari hujan (prak./normal)</th><th>Dasar model</th></tr>'
-   +R.map(x=>{const k=cat(x.c.pct);return`<tr><td>${MN[m0(x.f.m)]} ${x.f.y}</td><td>${Math.round(x.f.ch.mean)}</td><td>${Math.round(x.c.v)}</td><td>${Math.round(x.c.pct)}</td><td class="${k}">${lab[k]}</td>
-   <td>${Math.round(x.c.bn*100)} / ${Math.round(x.c.n*100)} / ${Math.round(x.c.an*100)}</td><td>${Math.round(x.h.v)} / ${Math.round(x.f.hh.mean)}</td><td>${x.c.use?'ENSO+IOD (r_cv='+x.c.r.toFixed(2)+')':'klimatologi'}</td></tr>`;}).join('');
-  C('c3',{type:'bar',data:{labels:MN,datasets:[{label:'Niño 3.4',data:S.cor.oni,backgroundColor:'#ef4444aa'},{label:'DMI',data:S.cor.dmi,backgroundColor:'#0b6fa4aa'},
-    {type:'line',label:'+0,39 (p=0,05)',data:MN.map(()=>.39),borderColor:'#94a3b8',borderDash:[4,3],pointRadius:0},{type:'line',label:'−0,39',data:MN.map(()=>-.39),borderColor:'#94a3b8',borderDash:[4,3],pointRadius:0}]},options:{scales:{y:{min:-1,max:1}}}});
+    {type:'line',label:'Normal (rata-rata)',data:R.map(x=>x.c.mm.mean),borderColor:'#0b6fa4',pointRadius:3},
+    {type:'line',label:'Batas bawah '+ci+'%',data:R.map(x=>x.c.lo),borderColor:COL.BN,borderDash:[4,3],pointRadius:0},
+    {type:'line',label:'Batas atas '+ci+'%',data:R.map(x=>x.c.hi),borderColor:COL.AN,borderDash:[4,3],pointRadius:0}]}});
+  $('tb').innerHTML='<tr><th>Bulan</th><th>CH normal</th><th>CH prakiraan</th><th>Selang '+ci+'% (mm)</th><th>% normal</th><th>Sifat</th><th>ONI / DMI dipakai</th><th>Dasar model</th><th>Hari hujan normal</th></tr>'
+   +R.map(x=>{const k=cat(x.c.pct),mm=x.c.mm;return`<tr><td>${MN[m0(x.f.m)]} ${x.f.y}</td><td>${Math.round(mm.mean)}</td><td>${Math.round(x.c.v)}</td><td>${Math.round(x.c.lo)} – ${Math.round(x.c.hi)}</td><td>${Math.round(x.c.pct)}</td><td class="${k}">${lab[k]}</td>
+   <td>${x.c.use?f1(x.c.o)+(mm.basis==='ONI+DMI'?' / '+f1(x.c.d):''):'–'}</td><td>${mm.basis}${x.c.use?' (lag ONI '+mm.lag+(mm.basis==='ONI+DMI'?', DMI '+mm.lagD:'')+', MSESS='+f2(mm.basis==='ONI+DMI'?mm.c.msess:mm.msess)+')':''}</td><td>${Math.round(S.clim.hh[x.f.m].mean)}</td></tr>`;}).join('');
+  $('tmh').textContent='Model per bulan — '+S.name;
+  $('tm').innerHTML='<tr><th>Bulan</th><th>Klim. (mm)</th><th>Lag ONI</th><th>r</th><th>p</th><th>Bukti ONI</th><th>R²</th><th>b (mm/ONI)</th><th>% per +1 ONI</th><th>MSESS LOYO</th><th>Layak?</th><th>Lag DMI</th><th>r parsial</th><th>Bukti DMI</th><th>ΔMSESS</th><th>Model dipakai</th><th>Rumus</th></tr>'
+   +S.mon.map(mm=>{const ek=x=>x==='Kuat'?'Kuat':x==='Indikatif'?'Indikatif':'';return`<tr><td>${MN[m0(mm.m)]}</td><td>${Math.round(mm.mean)}</td><td>${mm.lag}</td><td>${f2(mm.r)}</td><td>${mm.p<.001?'&lt;0,001':mm.p.toFixed(3)}</td><td class="${ek(mm.ev)}">${mm.ev.split(' ')[0]}</td><td>${f2(mm.r2)}</td><td>${f1(mm.b)}</td><td>${f1(mm.pct)}</td><td>${f2(mm.msess)}</td><td>${mm.ok?'Ya':'Tidak'}</td><td>${mm.lagD}</td><td>${f2(mm.rD)}</td><td class="${ek(mm.evD)}">${mm.evD.split(' ')[0]}</td><td>${f2(mm.c.dm)}</td><td class="BDI">${mm.basis}</td><td class="fm">${fm(mm)}</td></tr>`;}).join('');
+  const rc=D.meta.rcrit;
+  $('c3h').textContent='Korelasi CH vs ONI (lag terpilih) & DMI (parsial) per bulan ('+D.meta.y0+'–'+D.meta.y1+')';
+  C('c3',{type:'bar',data:{labels:MN,datasets:[{label:'ONI (lag terpilih)',data:S.mon.map(x=>x.r),backgroundColor:'#ef4444aa'},{label:'DMI (parsial, kontrol ONI)',data:S.mon.map(x=>x.rD),backgroundColor:'#0b6fa4aa'},
+    {type:'line',label:'+'+f2(rc).replace('.',',')+' (p='+al+')',data:MN.map(()=>rc),borderColor:'#94a3b8',borderDash:[4,3],pointRadius:0},{type:'line',label:'−'+f2(rc).replace('.',','),data:MN.map(()=>-rc),borderColor:'#94a3b8',borderDash:[4,3],pointRadius:0}]},options:{scales:{y:{min:-1,max:1}}}});
   const H=D.idx.hist;
-  C('c4',{type:'line',data:{labels:H.map(x=>MN[m0(x.m)]+' '+String(x.y).slice(2)),datasets:[{label:'Niño 3.4',data:H.map(x=>x.oni),borderColor:'#ef4444',tension:.3},{label:'DMI',data:H.map(x=>x.dmi),borderColor:'#0b6fa4',tension:.3}]}});
+  C('c4',{type:'line',data:{labels:H.map(x=>MN[m0(x.m)]+' '+String(x.y).slice(2)),datasets:[{label:'ONI',data:H.map(x=>x.oni),borderColor:'#ef4444',tension:.3},{label:'DMI (dihaluskan)',data:H.map(x=>x.dmi),borderColor:'#0b6fa4',tension:.3}]}});
   lay.clearLayers();
-  D.stations.filter(s=>s.lat!=null&&s.fc&&s.fc.length).forEach(s=>{const p=fc3(s,o,d),k=cat(p);
+  D.stations.filter(s=>s.lat!=null&&s.fc&&s.fc.length).forEach(s=>{const p=fc3(s),k=cat(p);
     L.circleMarker([s.lat,s.lon],{radius:s.id===S.id?11:8,color:'#fff',weight:2,fillColor:COL[k],fillOpacity:.9}).addTo(lay)
     .bindTooltip(s.name+': '+Math.round(p)+'% normal ('+lab[k]+')').on('click',()=>{$('st').value=s.id;render();});});
   tanam();
 }
 
-// Data cadangan jika unduhan CSV Google Sheets terhalang
 const DEFAULT_VAR = [
   {n: 'Ciherang', u: 120, y: 8.5, k: 0, g: 0, a: null, t: 'Umum dipakai; butuh air cukup'},
   {n: 'Mekongga', u: 120, y: 8.4, k: 0, g: 0, a: null, t: 'Populer di Sulawesi'},
@@ -231,7 +239,7 @@ const DEFAULT_VAR = [
 
 Promise.all([
   fetch(DATA_URL+'?t='+Date.now()).then(r => {
-    if(!r.ok) throw new Error('Gagal mengambil data.json: HTTP ' + r.status);
+    if(!r.ok) throw new Error('HTTP status ' + r.status);
     return r.json();
   }),
   new Promise((resolve) => {
@@ -253,8 +261,8 @@ Promise.all([
 ]).then(([r, sheetData]) => {
   VAR = sheetData; 
   if(r.error) throw new Error(r.error);
-  D=r;const I=r.idx;B=I.hist.some(x=>x.m===12)?1:0; 
-  $('meta').textContent=`Data ${r.meta.y0}–${r.meta.y1} · ${r.meta.n} pos · Niño 3.4 terakhir: ${MN[m0(I.m)]} ${I.y} (${f1(I.oni)} °C) · DMI terakhir: ${MN[m0(I.dm)]} ${I.dy} (${f1(I.dmi)} °C) · BoM: ${I.bomMsg} · diperbarui ${r.updated}`;
+  D=r; I=r.idx; B=0; I.hist.forEach(x=>{HM[x.y*12+x.m]=x;}); 
+  $('meta').textContent=`Hujan ${r.meta.y0}–${r.meta.y1} (${r.meta.nYears} th) · ${r.meta.n} kecamatan · ONI terakhir: ${MN[m0(I.m)]} ${I.y} (${f1(I.oni)} °C) · DMI (dihaluskan) terakhir: ${MN[m0(I.dm)]} ${I.dy} (${f1(I.dmi)} °C) · Sumber model: ${r.meta.source} · Indeks: ${I.bomMsg} · diperbarui ${r.updated}`;
   $('st').innerHTML=r.stations.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
   
   map=L.map('map').setView([-4.0894, 120.1601], 10);
@@ -278,11 +286,11 @@ Promise.all([
     }
   }).addTo(map)).catch(e=>console.error('Gagal memuat batas wilayah:',e));
   
-  const set=(o,d)=>{o=Math.max(-4.5,Math.min(4.5,+o||0));d=Math.max(-2,Math.min(2,+d||0));sc={o,d};$('o').value=o;$('d').value=d;render();};
-  set(I.oni,I.dmi);
+  const set=(o,d,obs)=>{o=Math.max(-4.5,Math.min(4.5,+o||0));d=Math.max(-2,Math.min(2,+d||0));sc={obs:!!obs,o,d};$('o').value=o;$('d').value=d;render();};
+  set(I.oni,I.dmi,true);
   $('st').onchange=render;$('wq').onchange=tanam;
   $('o').onchange=$('d').onchange=()=>set($('o').value,$('d').value);
-  document.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{const v=b.dataset.s;v==='obs'?set(I.oni,I.dmi):set(...v.split(',').map(Number));});
+  document.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{const v=b.dataset.s;v==='obs'?set(I.oni,I.dmi,true):set(...v.split(',').map(Number),false);});
 }).catch(e=>{
   $('err').textContent='Gagal memuat data iklim: ' + (e.message || e);
   $('meta').textContent='';
