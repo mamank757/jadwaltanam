@@ -4,7 +4,7 @@ on:
     - cron: '0 3 * * *'   # tiap hari 03:00 UTC (NOAA memperbarui ONI/DMI bulanan)
   workflow_dispatch:
   push:
-    paths: ['Data_Curah_Hujan*.xlsx', 'build_data.py']
+    paths: ['Data_Curah_Hujan_-_Wajo*.xlsx', 'build_data.py']
 permissions:
   contents: write
 jobs:
