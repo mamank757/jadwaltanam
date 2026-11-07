@@ -72,13 +72,29 @@ const Phi=x=>{const t=1/(1+.2316419*Math.abs(x)),p=.3989423*Math.exp(-x*x/2)*t*(
 const cat=p=>p>115?'AN':p<85?'BN':'N',lab={BN:'Bawah Normal',N:'Normal',AN:'Atas Normal'};
 const ph=(v,t,l)=>v>=t?l[2]:v<=-t?l[0]:l[1],f1=x=>(+x).toFixed(1);
 
-function calc(f,k,o,d){
-  const e=f[k],M=e.mod,ok=e.sd>0,use=ok&&!!M&&M.skill>SKMIN,sd=ok?e.sd:0,
-  z=use?M.mz+M.b1*(o-M.ma)/M.sa+M.b2*(d-M.mb)/M.sb:0,sg=use?M.rmse:1;
-  let v=Math.max(0,e.mean+z*sd);if(k==='hh')v=Math.min(v,dim(f));
-  let bn=1/3,an=1/3;
-  if(use){bn=Phi(((e.p33-e.mean)/sd-z)/sg);an=1-Phi(((e.p67-e.mean)/sd-z)/sg);}
-  return{v,bn,an,n:1-bn-an,use,r:M?M.r:0,pct:e.mean?v/e.mean*100:100,sd:sg*sd};
+function calc(f, k, o, d){
+  const e = f[k];
+  // Pengaman jika struktur 'mod' tidak ada atau menggunakan format skrip baru
+  const M = e.mod || (e.basis ? { skill: e.basis !== 'Klimatologi' ? 1 : 0, mz: e.mean, b1: e.b || 0, b2: e.b2 || 0, sa: 1, sb: 1, ma: 0, mb: 0, rmse: e.sd || 1 } : null);
+  const ok = e.sd > 0, use = ok && !!M && (M.skill > SKMIN || e.basis && e.basis !== 'Klimatologi'), sd = ok ? e.sd : 0;
+  
+  let z = 0;
+  if(use && M) {
+    if(M.mz != null && M.b1 != null) {
+      z = (M.mz + (M.b1 * ((o - (M.ma || 0)) / (M.sa || 1))) + ((M.b2 || 0) * ((d - (M.mb || 0)) / (M.sb || 1)))) - (e.mean || 0);
+      z = z / (sd || 1);
+    }
+  }
+  const sg = use && M && M.rmse ? M.rmse / (sd || 1) : 1;
+  let v = Math.max(0, e.mean + (z * sd));
+  if(k === 'hh') v = Math.min(v, dim(f));
+  
+  let bn = 1/3, an = 1/3;
+  if(use && sd > 0){
+    bn = Phi(((e.p33 - e.mean) / sd - z) / (sg || 1));
+    an = 1 - Phi(((e.p67 - e.mean) / sd - z) / (sg || 1));
+  }
+  return { v, bn, an, n: 1 - bn - an, use, r: M && M.r ? M.r : 0, pct: e.mean ? v / e.mean * 100 : 100, sd: (sg || 1) * sd };
 }
 const fc3=(s,o,d)=>{let v=0,m=0;s.fc.slice(0,3).forEach(f=>{v+=calc(f,'ch',o,d).v;m+=f.ch.mean;});return v/m*100;};
 const card=(a,b,c)=>`<div class="cd"><div class="ks">${a}</div><div class="kv">${b}</div><div class="ks">${c}</div></div>`;
