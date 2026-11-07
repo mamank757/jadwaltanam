@@ -122,7 +122,7 @@ def find_xlsx():
     env = os.environ.get('XLSX')
     if env and os.path.exists(env):
         return env
-    for f in sorted(glob.glob('Data_Curah_Hujan*.xlsx')):
+    for f in sorted(glob.glob('Data_Curah_Hujan_-_Wajo*.xlsx')):
         try:
             if {'oni', 'dmi', 'Parameter'} <= set(load_workbook(f, read_only=True).sheetnames):
                 return f
