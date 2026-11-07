@@ -20,7 +20,7 @@ Alur (identik dengan Excel):
   6. Prediksi = model pada ONI/DMI skenario; selang prediksi (1-alfa) pakai t(1-alfa/2, df) (df = n-3 / n-2 / n-1), batas bawah >= 0.
 Semua parameter (alfa, n min, MSESS min, dst.) dibaca dari sheet 'Parameter' Excel.
 
-Nilai ONI/DMI terkini (kartu 'Observasi terakhir' & grafik riwayat) diunduh dari NOAA CPC/PSL (+BoM untuk DMI);
+Nilai ONI/DMI terkini (kartu 'Observasi terakhir' & grafik riwayat): Niño 3.4 mingguan CPC (wksst9120.for) -> rerata bulanan -> rerata 3 bulan terpusat (= ONI); DMI NOAA PSL + BoM (sumber sama seperti kode lama);
 bila unduhan gagal dipakai cache/ lalu nilai terakhir di sheet oni/dmi Excel. Pelatihan model SELALU memakai sheet oni/dmi Excel.
 """
 import datetime as dt, glob, json, math, os, pathlib, re, warnings
@@ -76,7 +76,8 @@ except ImportError:  # tanpa scipy: distribusi t dihitung sendiri (beta tak-leng
 
 warnings.simplefilter('ignore')
 LEADS = 6
-ONI_URLS = ['https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt']
+ENSO_URL = 'https://www.cpc.ncep.noaa.gov/data/indices/wksst9120.for'   # sumber lama: Niño 3.4 mingguan CPC (tetap)
+MIN_WEEKS = 2
 DMI_URLS = ['https://psl.noaa.gov/gcos_wgsp/Timeseries/Data/dmi.had.long.data',
             'https://psl.noaa.gov/data/timeseries/month/data/dmi.had.long.data']
 BOM_URL = 'https://www.bom.gov.au/clim_data/IDCK000072/iod_1.txt'
@@ -311,16 +312,26 @@ def fetch(urls, name):
     return None, f'gagal: {err}'
 
 
-def parse_oni(txt):  # 'SEAS YR TOTAL ANOM' ; musim berpusat di bulan tengah (DJF -> Jan, ..., NDJ -> Des) tahun YR
-    o = {}
+def monthly(acc):
+    return {t: float(np.mean(v)) for t, v in acc.items() if len(v) >= MIN_WEEKS}
+
+
+def parse_weekly(txt):  # 03JAN1990  23.4-0.4  25.1-0.3  26.6 0.0  28.6 0.3 -> SSTA Nino3.4 (sama seperti kode lama)
+    acc = {}
     for l in txt.splitlines():
-        p = l.split()
-        if len(p) >= 4 and p[0] in SEAS and re.fullmatch(r'\d{4}', p[1]):
-            try:
-                o[int(p[1]) * 12 + SEAS[p[0]]] = float(p[3])
-            except ValueError:
-                pass
-    return o
+        d = re.match(r'^\s*(\d{1,2})([A-Z]{3})(\d{4})(.*)$', l)
+        if not d or d[2] not in MON:
+            continue
+        v = [float(x) for x in re.findall(r'-?\d+\.\d', d[4])]
+        x = v[5] if len(v) >= 8 else v[2] if len(v) >= 4 else None  # 8 angka = SST+SSTA; 4 angka = SSTA saja
+        if x is not None:
+            acc.setdefault(int(d[3]) * 12 + MON[d[2]], []).append(x)
+    return monthly(acc)
+
+
+def oni_from_monthly(nino):
+    """ONI = rerata 3 bulan terpusat anomali Niño 3.4 (definisi ONI; sama dengan skala data latih Excel)."""
+    return {t: float(np.mean([nino[k] for k in (t - 1, t, t + 1)])) for t in nino if all(k in nino for k in (t - 1, t, t + 1))}
 
 
 def parse_psl(txt):  # tahun + 12 nilai; missing <= -90
@@ -380,16 +391,19 @@ def smooth_dmi(raw, on, strict=False):
 
 def current_indices(oni_x, dmi_x, P):
     log = []
-    oni = dict(oni_x); dmi = dict(dmi_x)
-    txt, m1 = fetch(ONI_URLS, 'oni.ascii.txt')
-    o = parse_oni(txt) if txt else {}
-    if len(o) > 100:
+    oni = dict(oni_x); dmi = dict(dmi_x); live = False
+    txt, m1 = fetch([ENSO_URL], 'wksst9120.for')
+    w = parse_weekly(txt) if txt else {}
+    if len(w) >= 20:
+        o = oni_from_monthly(w)
         ov = [t for t in o if t in oni_x]
         if ov:
-            log.append(f'ONI: selisih rata2 vs sheet Excel {np.mean([abs(o[t] - oni_x[t]) for t in ov]):.3f} ({len(ov)} bln)')
-        oni.update(o); log.append('ONI: ' + m1)
+            log.append(f'Nino3.4 vs ONI Excel: selisih rata2 {np.mean([abs(o[t] - oni_x[t]) for t in ov]):.2f} ({len(ov)} bln)')
+        for t, v in o.items():       # bulan yang sudah ada di sheet oni Excel tetap memakai nilai Excel
+            oni.setdefault(t, v)
+        live = 'langsung' in m1; log.append('Nino3.4 mingguan CPC: ' + m1)
     else:
-        log.append('ONI: ' + m1 + ' → nilai terakhir sheet oni Excel')
+        log.append('Nino3.4: ' + m1 + ' → nilai terakhir sheet oni Excel')
     txt, m2 = fetch(DMI_URLS, 'dmi_psl.data')
     d = parse_psl(txt) if txt else {}
     if len(d) > 100:
@@ -403,7 +417,7 @@ def current_indices(oni_x, dmi_x, P):
         if b:
             merge_bom(dmi, b); bom_ok = True
     log.append('BoM: ' + m3)
-    return oni, smooth_dmi(dmi, P['smooth'], strict=True), bom_ok, '; '.join(log)
+    return oni, smooth_dmi(dmi, P['smooth'], strict=True), bom_ok, '; '.join(log), live
 
 
 # ============ Utama ============
@@ -441,7 +455,7 @@ def main():
                   lat=None, lon=None, CH=np.mean([s['CH'] for s in st], axis=0),
                   HH=np.nanmean(np.stack([s['HH'] for s in st]), axis=0))] + st
 
-    oni_c, dmi_c, bom_ok, msg = current_indices(oni_x, dmi_x_raw, P)
+    oni_c, dmi_c, bom_ok, msg, live = current_indices(oni_x, dmi_x_raw, P)
     t_last = max(oni_c)
     now = dt.datetime.now(dt.timezone.utc); t_now = now.year * 12 + now.month - 1
     hist = [dict(y=t // 12, m=t % 12, oni=oni_c.get(t), dmi=dmi_c.get(t)) for t in range(t_last - 35, t_last + 1)]
@@ -460,7 +474,7 @@ def main():
     n = len(yrs)
     out = dict(stations=stations,
                idx=dict(y=t_last // 12, m=t_last % 12, oni=oni_c[t_last], dmi=dmi_c.get(td), dy=td // 12, dm=td % 12,
-                        bom=bom_ok, bomMsg=msg, hist=hist),
+                        bom=bom_ok, bomMsg=msg, live=live, hist=hist),
                meta=dict(y0=Y0, y1=Y1, n=len(st), nYears=n, alpha=P['alpha'], minN=P['minN'], minMsess=P['minMsess'],
                          useInd=P['useInd'], smooth=P['smooth'], dMsess=P['dMsess'],
                          rcrit=math.sqrt(tinv(P['alpha'], n - 2) ** 2 / (tinv(P['alpha'], n - 2) ** 2 + n - 2)),
