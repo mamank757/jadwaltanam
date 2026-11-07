@@ -76,10 +76,6 @@ const m0=x=>x-B;
 const cat=p=>p>115?'AN':p<85?'BN':'N',lab={BN:'Bawah Normal',N:'Normal',AN:'Atas Normal'};
 const ph=(v,t,l)=>v>=t?l[2]:v<=-t?l[0]:l[1],f1=x=>(+x).toFixed(1),f2=x=>(+x).toFixed(2);
 
-/* ===== Model hujan = logika Excel (Model_Stasiun, Model_ONI_DMI, Skenario_DMI) =====
-   Parameter tiap seri-bulan (lag, a, b, b1, b2, s, Sxx, ... , basis) dihitung build_data.py dari Excel.
-   basis: 'ONI+DMI' | 'ONI saja' | 'Klimatologi'. Selang prediksi memakai t(1-α/2, df) seperti sheet Skenario_DMI. */
-/*PRED-START*/
 function pred(mm,o,d){
   let v,se,t;
   if(mm.basis==='ONI+DMI'){
@@ -92,8 +88,7 @@ function pred(mm,o,d){
   if(mm.basis!=='Klimatologi')v=Math.max(0,v);
   return{v,se,lo:Math.max(0,v-t*se),hi:v+t*se};
 }
-/*PRED-END*/
-// Nilai ONI/DMI yang dipakai untuk bulan target f: skenario tetap, atau (mode observasi) nilai teramati pada bulan (target − lag) bila ada.
+
 function pv(f,mm){
   if(!sc.obs)return{o:sc.o,d:sc.d};
   const t=f.y*12+f.m,g=(L,k)=>{const x=HM[t-L];return x&&x[k]!=null?x[k]:null;},o=g(mm.lag,'oni'),d=g(mm.lagD,'dmi');
@@ -128,12 +123,11 @@ function series(s){
 }
 function days(ser){const a=[],b=[],f=[];ser.forEach(x=>{for(let i=0;i<x.n;i++){a.push(x.v/x.n);b.push(x.p80/x.n);f.push(x.fc);}});return{a,b,f};}
 
-// Fungsi sim() telah dimodifikasi menerima potongUmur untuk logika fisik Tabela
 function sim(dy,T,v,q, potongUmur){
   const isTabela = potongUmur > 0;
-  const uBaru = v.u - potongUmur; // Umur total berkurang (menghindari transplanting shock)
-  const waktuPersemaian = isTabela ? 0 : NUR; // Tabela tidak ada persemaian di luar lahan utama
-  const Dc = uBaru - waktuPersemaian; // Hari durasi irigasi di lahan utama
+  const uBaru = v.u - potongUmur; 
+  const waktuPersemaian = isTabela ? 0 : NUR; 
+  const Dc = uBaru - waktuPersemaian; 
   
   const lp=v.g?0:LP, kq=v.g?0:q, A=dy.a;
   if(T+Dc>A.length)return null;
@@ -174,7 +168,6 @@ function tanam(){
     return maxIdx;
   });
 
-  // Sintaks yang benar dengan class .s4 untuk tanggal terbaik
   $('hm').innerHTML='<table class="hm"><tr><th>Varietas (umur)</th>'+cols.map(T=>`<th>${dl(t0,T).replace(' ','<br>')}</th>`).join('')+'</tr>'
    +VAR.map((v,i)=>{
      const bestJ = bestPerVar[i];
@@ -238,22 +231,27 @@ function render(){
 }
 
 Promise.all([
-  fetch(DATA_URL+'?t='+Date.now()).then(r=>r.json()),
+  fetch(DATA_URL+'?t='+Date.now()).then(r=>{
+    if(!r.ok) throw new Error('HTTP status ' + r.status);
+    return r.json();
+  }),
   new Promise((resolve, reject) => {
     Papa.parse(SHEET_CSV_URL, {
       download: true,
       header: true,
       dynamicTyping: true, 
       skipEmptyLines: true,
-      complete: results => resolve(results.data),
+      complete: results => {
+        if(results && results.data) resolve(results.data);
+        else reject(new Error('CSV data kosong'));
+      },
       error: err => reject(err)
     });
   })
 ]).then(([r, sheetData]) => {
   VAR = sheetData; 
-  
-  if(r.error)throw new Error(r.error);
-  D=r;I=r.idx;B=0;I.hist.forEach(x=>{HM[x.y*12+x.m]=x;}); 
+  if(r.error) throw new Error(r.error);
+  D=r; I=r.idx; B=0; I.hist.forEach(x=>{HM[x.y*12+x.m]=x;}); 
   $('meta').textContent=`Hujan ${r.meta.y0}–${r.meta.y1} (${r.meta.nYears} th) · ${r.meta.n} kecamatan · ONI terakhir: ${MN[m0(I.m)]} ${I.y} (${f1(I.oni)} °C) · DMI (dihaluskan) terakhir: ${MN[m0(I.dm)]} ${I.dy} (${f1(I.dmi)} °C) · Sumber model: ${r.meta.source} · Indeks: ${I.bomMsg} · diperbarui ${r.updated}`;
   $('st').innerHTML=r.stations.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
   
@@ -284,7 +282,7 @@ Promise.all([
   $('o').onchange=$('d').onchange=()=>set($('o').value,$('d').value);
   document.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{const v=b.dataset.s;v==='obs'?set(I.oni,I.dmi,true):set(...v.split(',').map(Number),false);});
 }).catch(e=>{
-  $('err').textContent='Gagal memuat data: '+ (e.message || e);
+  $('err').textContent='Gagal memuat data: ' + (e.message || e);
   $('meta').textContent='';
 });
 </script></body></html>
