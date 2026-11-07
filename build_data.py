@@ -5,7 +5,7 @@ Membangun data.json untuk dashboard GitHub Pages dengan LOGIKA YANG SAMA DENGAN 
 Uji_DMI, FDR_DMI, Model_ONI_DMI, Skenario, Skenario_DMI).
 
 Struktur repo (root): index.html, build_data.py, Data_Curah_Hujan_Wajo_Model_ENSO_IOD*.xlsx, .github/workflows/update.yml
-Lokal : pip install numpy openpyxl requests   (scipy opsional) && python build_data.py
+Lokal : pip install numpy openpyxl requests    (scipy opsional) && python build_data.py
 
 Alur (identik dengan Excel):
   1. Hujan bulanan 14 kecamatan (sheet kecamatan, baris 'CURAH HUJAN BULANAN'); WILAYAH = rata-rata aritmetik 14 kecamatan.
@@ -122,7 +122,8 @@ def find_xlsx():
     env = os.environ.get('XLSX')
     if env and os.path.exists(env):
         return env
-    for f in sorted(glob.glob('Data_Curah_Hujan_-_Wajo*.xlsx')):
+    # DIPERBAIKI: Menggunakan pola wildcard fleksibel tanpa batasan tanda hubung khusus
+    for f in sorted(glob.glob('Data_Curah_Hujan_*.xlsx')):
         try:
             if {'oni', 'dmi', 'Parameter'} <= set(load_workbook(f, read_only=True).sheetnames):
                 return f
@@ -435,7 +436,7 @@ def main():
     if u:
         try:
             r = requests.get(u, timeout=120); r.raise_for_status()
-            pathlib.Path(os.environ.get('XLSX') or 'Data_Curah_Hujan_-_Wajo.xlsx').write_bytes(r.content)
+            pathlib.Path(os.environ.get('XLSX') or 'Data_Curah_Hujan_Wajo.xlsx').write_bytes(r.content)
             print('Excel diambil dari Google Sheets')
         except Exception as e:
             print('Gagal ambil Google Sheets, memakai file xlsx di repo:', e)
