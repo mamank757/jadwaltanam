@@ -1,28 +1,46 @@
 name: Update data iklim
+
 on:
   schedule:
-    - cron: '0 3 * * *'   # tiap hari 03:00 UTC (NOAA memperbarui ONI/DMI bulanan)
+    - cron: '0 3 * * *'   # tiap hari 03:00 UTC
   workflow_dispatch:
   push:
-    paths: ['Data_Curah_Hujan_-_Wajo*.xlsx', 'build_data.py']
+    paths: 
+      - 'build_data.py'
+
 permissions:
   contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install numpy scipy openpyxl requests
-      - run: python build_data.py
+
+      - name: Install dependencies
+        run: pip install numpy scipy openpyxl requests
+
+      - name: Run build script
+        run: python build_data.py
         env:
-          SHEET_XLSX_URL: ${{ secrets.SHEET_XLSX_URL }}  # opsional
-      - name: Commit hasil
+          SHEET_XLSX_URL: ${{ secrets.SHEET_XLSX_URL }}
+
+      - name: Commit and push changes
         run: |
-          git config user.name "github-actions"
-          git config user.email "actions@users.noreply.github.com"
-          git add data.json
-          git add cache 2>/dev/null || true
-          git diff --cached --quiet || (git commit -m "Update data $(date -u +%F)" && git push)
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add data.json cache/ 2>/dev/null || true
+          
+          # Cek apakah ada perubahan yang perlu di-commit
+          if git diff --staged --quiet; then
+            echo "Tidak ada perubahan data baru."
+          else
+            git commit -m "Update data iklim otomatis $(date -u +%F)"
+            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main
+          fi
