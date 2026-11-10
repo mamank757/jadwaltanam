@@ -1,4 +1,4 @@
-name: Update data iklim
+name: Update data iklim 
 
 on:
   schedule:
