@@ -72,7 +72,7 @@ h3{font-size:17px;margin:22px 0 8px}
 <div class="cd" style="margin-bottom:12px"><h2>Skor kelayakan (0–100): varietas × tanggal pindah tanam</h2><div id="hm"></div><p class="note">Hijau ≥75 layak · oranye 55–74 waspada · merah &lt;55 hindari. Arahkan kursor ke sel untuk rincian.</p></div>
 <div class="cd" style="margin-bottom:12px"><h2>Tanggal tanam terbaik per pos</h2><table id="tp"></table></div>
 
-<p class="note"><b>Metode hujan (mengikuti workbook Excel “Model ENSO IOD per Kecamatan”):</b> curah hujan bulanan grid per kecamatan 1995–2025 (WILAYAH = rata-rata aritmetik 14 kecamatan); prediktor ONI v6 (NOAA CPC) dan DMI (NOAA PSL, dihaluskan rata-rata 3 bulan). Untuk tiap kecamatan × bulan target dipilih lag ONI 0–6 bulan dengan p terkecil (korelasi Pearson, uji t dua sisi); bukti dikoreksi FDR Benjamini-Hochberg per seri (84 uji). Model OLS R̂ = a + b·ONI(bulan − lag) dipakai bila n ≥ batas, MSESS validasi leave-one-year-out &gt; ambang dan bukti Kuat/Indikatif; model gabungan ONI+DMI dipakai hanya bila DMI (korelasi parsial) menambah (p b2 &lt; α, bukti DMI, ΔMSESS &gt; ambang). Selain itu prakiraan = klimatologi. Selang prediksi (1−α) memakai distribusi t dengan df n−3 / n−2 / n−1 dan batas bawah ≥ 0. Semua ambang dibaca dari sheet Parameter Excel. Sifat hujan (BMKG): Atas Normal &gt;115%, Normal 85–115%, Bawah Normal &lt;85% dari rata-rata. Nilai ONI/DMI untuk bulan prediktor yang belum teramati mengikuti pilihan “ONI/DMI ke depan”: bertahan konstan (seperti sheet Skenario Excel) atau menurun linear ke netral dalam 6/9/12 bulan sejak bulan pertama prakiraan; pada mode “Observasi terakhir” dipakai ONI/DMI teramati pada bulan (target − lag) bila sudah tersedia. Model diterapkan ke seluruh 18 bulan simulasi tanam (bukan hanya 6 bulan). Dengan n = 31 tahun, korelasi |r| &gt; 0,36 baru signifikan (p&lt;0,05) per uji tunggal. Hari hujan hanya klimatologi stasiun lama 1998–2024 (tidak sepadan dengan hujan grid, tidak dimodelkan).<br>
+<p class="note"><b>Metode hujan (mengikuti workbook Excel “Model ENSO IOD per Kecamatan”):</b> curah hujan bulanan grid per kecamatan 1995–2025 (WILAYAH = rata-rata aritmetik 14 kecamatan); prediktor ONI v6 (NOAA CPC) dan DMI (NOAA PSL, dihaluskan rata-rata 3 bulan) dipakai untuk melatih model; nilai teramati dan riwayat pada halaman ini berasal dari Niño 3.4 relatif dan DMI BoM (rerata 3 bulan) yang dikalibrasi ke skala tersebut. Untuk tiap kecamatan × bulan target dipilih lag ONI 0–6 bulan dengan p terkecil (korelasi Pearson, uji t dua sisi); bukti dikoreksi FDR Benjamini-Hochberg per seri (84 uji). Model OLS R̂ = a + b·ONI(bulan − lag) dipakai bila n ≥ batas, MSESS validasi leave-one-year-out &gt; ambang dan bukti Kuat/Indikatif; model gabungan ONI+DMI dipakai hanya bila DMI (korelasi parsial) menambah (p b2 &lt; α, bukti DMI, ΔMSESS &gt; ambang). Selain itu prakiraan = klimatologi. Selang prediksi (1−α) memakai distribusi t dengan df n−3 / n−2 / n−1 dan batas bawah ≥ 0. Semua ambang dibaca dari sheet Parameter Excel. Sifat hujan (BMKG): Atas Normal &gt;115%, Normal 85–115%, Bawah Normal &lt;85% dari rata-rata. Nilai ONI/DMI untuk bulan prediktor yang belum teramati mengikuti pilihan “ONI/DMI ke depan”: bertahan konstan (seperti sheet Skenario Excel) atau menurun linear ke netral dalam 6/9/12 bulan sejak bulan pertama prakiraan; pada mode “Observasi terakhir” dipakai ONI/DMI teramati pada bulan (target − lag) bila sudah tersedia. Model diterapkan ke seluruh 18 bulan simulasi tanam (bukan hanya 6 bulan). Dengan n = 31 tahun, korelasi |r| &gt; 0,36 baru signifikan (p&lt;0,05) per uji tunggal. Hari hujan hanya klimatologi stasiun lama 1998–2024 (tidak sepadan dengan hujan grid, tidak dimodelkan).<br>
 <b>Metode tanam:</b> neraca air harian sederhana. Hujan bulanan dibagi rata per hari (model Excel + skenario ONI/DMI untuk seluruh 18 bulan; bulan tanpa sinyal signifikan = klimatologi); hujan efektif = 85% hujan (gogo 70%). Kebutuhan air = penyiapan lahan 200 mm/14 hari + ETo×Kc + perkolasi. Defisit yang tak tertutup irigasi diberi bobot sensitivitas per fase (vegetatif 0,25; generatif 0,6; pemasakan 0,25; penyiapan lahan 0,1) menjadi kehilangan hasil; ditambah penalti hujan lebat saat berbunga (&gt;10 mm/hari) dan saat panen (&gt;8 mm/hari). Skor = rerata skenario hujan-prakiraan dan hujan-kering (peluang terlampaui 80%). Umur varietas = hari sebar-panen, bibit dipindah umur 20 hari.<br>
 <b>Asumsi yang perlu dikalibrasi:</b> ETo 4 mm/hari, perkolasi 1,5 mm/hari, pengurang risiko kekeringan varietas toleran 15% per tingkat, hasil lapang = 65% potensi (gogo 45%); peringkat rekomendasi memakai perkiraan hasil, bukan skor. Data varietas (array VAR) bersifat indikatif: cocokkan dengan Deskripsi Varietas Padi resmi dan rekomendasi BPSB/BRMP Sulsel. Model tidak memuat suhu (dataran tinggi Mamasa), tanah, hama-penyakit, atau debit irigasi. Gunakan bersama Kalender Tanam Terpadu Kementan dan produk BMKG.</p></main>
 
@@ -81,6 +81,7 @@ h3{font-size:17px;margin:22px 0 8px}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script>
 const DATA_URL='data.json';
+  const ENSO_CSV='nino34_bom_oni_format.csv',IOD_CSV='iod_bom_dmi_format.csv',LATIH_URL='indeks_latih.json',KALIBRASI=true;
 const MN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],$=i=>document.getElementById(i);
 const COL={BN:'#d97706',N:'#64748b',AN:'#0b8a5f'};
 let D,S,I,HM={},sc={obs:true,o:0,d:0},ch={},map,lay,B=0,TS=0;
@@ -279,7 +280,34 @@ function render(){
     .bindTooltip(s.name+': '+Math.round(p)+'% normal ('+lab[k]+')').on('click',()=>{$('st').value=s.id;render();});});
   tanam();
 }
-
+const getCsv=u=>new Promise(res=>Papa.parse(u+'?t='+Date.now(),{download:true,header:true,dynamicTyping:true,skipEmptyLines:true,complete:x=>res(x.data),error:()=>res([])}));
+const ols=(x,y)=>{const n=x.length;if(n<12)return null;
+  const mx=x.reduce((s,v)=>s+v,0)/n,my=y.reduce((s,v)=>s+v,0)/n;let sxx=0,sxy=0,syy=0;
+  x.forEach((v,i)=>{sxx+=(v-mx)**2;sxy+=(v-mx)*(y[i]-my);syy+=(y[i]-my)**2;});
+  if(sxx<1e-9||syy<1e-9)return null;const b=sxy/sxx;return{a:my-b*mx,b,r:sxy/Math.sqrt(sxx*syy),n};};
+// Ganti indeks ONI/DMI di data.json dengan CSV BoM (rerata 3 bulan), dikalibrasi ke skala ONI v6 / DMI PSL yang dipakai melatih model
+function applyBom(r,en,io,latih){
+  const key=x=>x.Year*12+x.Month-1, // kunci 0-based = tahun*12+(bulan-1), sama dengan data.json & indeks_latih.json
+        mk=(rows,col)=>{const m=new Map();rows.forEach(x=>{if(x&&x.Year&&typeof x[col]==='number'&&isFinite(x[col]))m.set(key(x),x[col]);});return m;},
+        E=mk(en,'ONI_Equivalent_3Mo'),Dm=mk(io,'DMI_3Mo');
+  if(!E.size||!Dm.size)return false;
+  const cal={o:[0,1],d:[0,1]};let txt='BoM (CSV, rerata 3 bulan)';
+  if(KALIBRASI&&latih&&latih.oni&&latih.dmi){
+    const Ds=new Map(),dr=latih.dmi; // DMI latih mentah -> dihaluskan 3 bulan terpusat, sama dengan yang dipakai model
+    Object.keys(dr).forEach(s=>{const k=+s;if(dr[k-1]!=null&&dr[k+1]!=null)Ds.set(k,(dr[k-1]+dr[k]+dr[k+1])/3);});
+    [['o',E,k=>latih.oni[k],'ONI'],['d',Dm,k=>Ds.get(k),'DMI']].forEach(([c,M,T,nm])=>{
+      const x=[],y=[];M.forEach((v,k)=>{const t=T(k);if(t!=null){x.push(v);y.push(t);}});
+      const q=ols(x,y);
+      if(q&&q.n>=24&&q.r>=.7&&q.b>=.25&&q.b<=2){cal[c]=[q.a,q.b];txt+=` · ${nm}(model) = ${q.a.toFixed(2)} + ${q.b.toFixed(2)}×BoM (r=${q.r.toFixed(2)}, n=${q.n})`;}
+      else txt+=` · ${nm}: tanpa kalibrasi (tumpang tindih kurang/lemah)`;
+    });
+  }else txt+=' · tanpa kalibrasi';
+  const co=v=>cal.o[0]+cal.o[1]*v,cd=v=>cal.d[0]+cal.d[1]*v,
+        last=m=>Math.max(...m.keys()),ke=last(E),kd=last(Dm),ku=Math.max(ke,kd),hist=[];
+  for(let k=ku-35;k<=ku;k++)hist.push({y:Math.floor(k/12),m:k%12,oni:E.has(k)?co(E.get(k)):null,dmi:Dm.has(k)?cd(Dm.get(k)):null});
+  Object.assign(r.idx,{y:Math.floor(ke/12),m:ke%12,oni:co(E.get(ke)),dy:Math.floor(kd/12),dm:kd%12,dmi:cd(Dm.get(kd)),hist,live:true,bomMsg:txt});
+  return true;
+}
 Promise.all([
   fetch(DATA_URL+'?t='+Date.now()).then(r=>r.json()),
   new Promise((resolve, reject) => {
@@ -291,11 +319,14 @@ Promise.all([
       complete: results => resolve(results.data),
       error: err => reject(err)
     });
-  })
-]).then(([r, sheetData]) => {
+   }),
+  getCsv(ENSO_CSV),getCsv(IOD_CSV),
+  fetch(LATIH_URL+'?t='+Date.now()).then(x=>x.ok?x.json():null).catch(()=>null)
+]).then(([r, sheetData, en, io, latih]) => {
   VAR = sheetData; 
   
   if(r.error)throw new Error(r.error);
+    if(!applyBom(r,en,io,latih))$('err').textContent='Peringatan: CSV BoM (Niño 3.4 / DMI) gagal dimuat, memakai indeks bawaan data.json.';
   D=r;I=r.idx;B=0;I.hist.forEach(x=>{HM[x.y*12+x.m]=x;}); 
   $('meta').textContent=`Hujan ${r.meta.y0}–${r.meta.y1} (${r.meta.nYears} th) · ${r.meta.n} kecamatan · ONI terakhir: ${MN[m0(I.m)]} ${I.y} (${f1(I.oni)} °C) · DMI (dihaluskan) terakhir: ${MN[m0(I.dm)]} ${I.dy} (${f1(I.dmi)} °C) · Sumber model: ${r.meta.source} · Indeks: ${I.bomMsg} · diperbarui ${r.updated}`;
   {const now=new Date(),gap=(now.getFullYear()*12+now.getMonth())-(I.y*12+I.m);
